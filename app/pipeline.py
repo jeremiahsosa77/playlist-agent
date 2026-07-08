@@ -6,7 +6,7 @@ from dotenv import load_dotenv
 from google import genai
 
 from app.prompt import PLAYLIST_PROMPT
-from app.spotify import search_song
+from app.spotify import search_song, create_playlist
 from evals.scorers import (
     spotify_match_rate,
     duplicate_song_score,
@@ -58,7 +58,7 @@ def enrich_playlist(playlist: dict) -> dict:
     return playlist
 
 # Evaluates a playlist using various scoring functions.
-def evaluate_playlist(playlist: dict) -> dict:
+def evaluate_playlist(playlist: dict, expected_length: int) -> dict:
     # Compute the playlist quality metrics.
     return {
         # Measure how many songs matched Spotify.
@@ -66,7 +66,32 @@ def evaluate_playlist(playlist: dict) -> dict:
         # Measure duplicate songs.
         "duplicates": duplicate_song_score(playlist),
         # Measure whether the playlist has the expected length.
-        "playlist_length": playlist_length_score(playlist),
+        "playlist_length": playlist_length_score(playlist, expected_length),
         # Measure the confidence of Spotify matches.
         "spotify_match_confidence": spotify_match_confidence_score(playlist),
     }
+
+def passes_quality_gate(scores: dict) -> bool:
+    return (
+        scores["spotify_match"] >= 0.95
+        and scores["spotify_match_confidence"] >= 0.70
+        and scores["duplicates"] == 1.0
+        and scores["playlist_length"] == 1.0
+    )
+
+
+def publish_playlist(playlist: dict) -> dict:
+    songs = playlist["playlist"]["songs"]
+
+    track_uris = [
+        song["spotify"]["uri"]
+        for song in songs
+        if song.get("spotify") is not None
+    ]
+
+    return create_playlist(
+        name=playlist["playlist"]["name"],
+        description=playlist["playlist"]["description"],
+        track_uris=track_uris,
+        public=True,
+    )

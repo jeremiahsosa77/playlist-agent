@@ -1,6 +1,7 @@
 ''' All spotify music interactions. '''
 
 import os
+import requests
 from dotenv import load_dotenv
 import spotipy
 from spotipy.oauth2 import SpotifyOAuth
@@ -52,3 +53,44 @@ def search_song(title: str, artist: str):
             }
 
     return None
+
+def create_playlist(name: str, description: str, track_uris: list[str], public: bool = False):
+    """
+    Create a Spotify playlist using the newer /me/playlists endpoint.
+    """
+    token = sp.auth_manager.get_access_token(as_dict=False)
+
+    headers = {
+        "Authorization": f"Bearer {token}",
+        "Content-Type": "application/json",
+    }
+
+    playlist_payload = {
+        "name": name,
+        "description": description,
+        "public": public,
+    }
+
+    playlist_response = requests.post(
+        "https://api.spotify.com/v1/me/playlists",
+        headers=headers,
+        json=playlist_payload,
+    )
+
+    playlist_response.raise_for_status()
+    playlist = playlist_response.json()
+
+    add_tracks_response = requests.post(
+        f"https://api.spotify.com/v1/playlists/{playlist['id']}/items",
+        headers=headers,
+        json={"uris": track_uris},
+    )
+
+    add_tracks_response.raise_for_status()
+
+    return {
+        "id": playlist["id"],
+        "name": playlist["name"],
+        "url": playlist["external_urls"]["spotify"],
+        "track_count": len(track_uris),
+    }

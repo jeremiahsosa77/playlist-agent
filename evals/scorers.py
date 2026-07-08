@@ -40,15 +40,12 @@ def duplicate_song_score(playlist: dict) -> float:
     return 1.0
 
 # Checks whether the playlist has the expected length.
-def playlist_length_score(playlist: dict, expected_length: int = 20) -> float:
+def playlist_length_score(playlist: dict, expected_length: int) -> float:
     # Check whether the playlist has the expected number of songs.
     songs = playlist["playlist"]["songs"]
 
     # Exact length gets full credit.
-    if len(songs) == expected_length:
-        return 1.0
-
-    return 0.0
+    return 1.0 if len(songs) == expected_length else 0.0
 
 # Checks how closely Spotify titles match the originals.
 def spotify_match_confidence_score(playlist: dict) -> float:
