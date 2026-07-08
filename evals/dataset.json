@@ -4,5 +4,29 @@
     "genres": ["Hip Hop", "Trap"],
     "mood": "Late Night Drive",
     "playlist_length": 20
+  },
+  {
+    "artists": ["Beabadoobee", "Laufey", "Clairo", "Faye Webster", "Mac DeMarco"],
+    "genres": ["Indie Pop", "Alternative", "Bedroom Pop"],
+    "mood": "Chill Gaming Vibes",
+    "playlist_length": 30
+  },
+  {
+    "artists": ["SZA", "Daniel Caesar", "The Weeknd", "Brent Faiyaz"],
+    "genres": ["R&B", "Soul", "Pop"],
+    "mood": "Modern romantic date night",
+    "playlist_length": 20
+  },
+  {
+    "artists": ["Bad Bunny", "Feid", "Rauw Alejandro", "Karol G"],
+    "genres": ["Reggaeton", "Latin Pop"],
+    "mood": "Summer night drive",
+    "playlist_length": 20
+  },
+  {
+    "artists": ["Frank Ocean", "Tyler, The Creator", "Steve Lacy", "Childish Gambino"],
+    "genres": ["Alternative R&B", "Neo Soul", "Hip Hop"],
+    "mood": "Creative late night coding",
+    "playlist_length": 25
   }
 ]
