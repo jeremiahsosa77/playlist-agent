@@ -1,0 +1,30 @@
+{
+"_comment": "This file is just for test cases.",
+
+"playlist": {
+"name": "Late Night Trap Drive",
+"description": "A curated selection of late-night hip-hop and trap vibes.",
+"songs": [
+{ "artist": "Travis Scott", "title": "MY EYES" },
+{ "artist": "Drake", "title": "Marvins Room" },
+{ "artist": "Metro Boomin, Travis Scott", "title": "Raindrops (Insane)" },
+{ "artist": "Travis Scott", "title": "Nightcrawler" },
+{ "artist": "Drake", "title": "The Ride" },
+{ "artist": "Metro Boomin, Future", "title": "Superhero (Heroes & Villains)" },
+{ "artist": "Travis Scott", "title": "sdp interlude" },
+{ "artist": "Drake", "title": "Jaded" },
+{ "artist": "Metro Boomin, 21 Savage", "title": "Glock In My Lap" },
+{ "artist": "Travis Scott", "title": "Houstonfornication" },
+{ "artist": "Drake", "title": "Star67" },
+{ "artist": "Metro Boomin, The Weeknd", "title": "Creepin'" },
+{ "artist": "Travis Scott", "title": "Astrothunder" },
+{ "artist": "Drake", "title": "Pipe Down" },
+{ "artist": "Metro Boomin, Travis Scott, Young Thug", "title": "Trance" },
+{ "artist": "Travis Scott", "title": "Maria I'm Drunk" },
+{ "artist": "Drake", "title": "Doing It Wrong" },
+{ "artist": "Metro Boomin, Don Toliver", "title": "Too Many Nights" },
+{ "artist": "Travis Scott", "title": "90210" },
+{ "artist": "Drake", "title": "Feel No Ways" }
+]
+}
+}

@@ -1,0 +1,249 @@
+{
+  "_comment": "This file is just for test cases.",
+  "playlist": {
+    "name": "Late Night Trap Drive",
+    "description": "A curated selection of late-night hip-hop and trap vibes.",
+    "songs": [
+      {
+        "artist": "Travis Scott",
+        "title": "MY EYES",
+        "spotify": {
+          "id": "4kjI1gwQZRKNDkw1nI475M",
+          "uri": "spotify:track:4kjI1gwQZRKNDkw1nI475M",
+          "title": "MY EYES",
+          "artist": "Travis Scott",
+          "album": "UTOPIA",
+          "spotify_url": "https://open.spotify.com/track/4kjI1gwQZRKNDkw1nI475M"
+        }
+      },
+      {
+        "artist": "Drake",
+        "title": "Marvins Room",
+        "spotify": {
+          "id": "047fCsbO4NdmwCBn8pcUXl",
+          "uri": "spotify:track:047fCsbO4NdmwCBn8pcUXl",
+          "title": "Marvins Room",
+          "artist": "Drake",
+          "album": "Take Care (Deluxe)",
+          "spotify_url": "https://open.spotify.com/track/047fCsbO4NdmwCBn8pcUXl"
+        }
+      },
+      {
+        "artist": "Metro Boomin, Travis Scott",
+        "title": "Raindrops (Insane)",
+        "spotify": {
+          "id": "1pacwLXyRO47ka0v6LTIiY",
+          "uri": "spotify:track:1pacwLXyRO47ka0v6LTIiY",
+          "title": "Raindrops (Insane) [with Travis Scott]",
+          "artist": "Metro Boomin",
+          "album": "HEROES & VILLAINS",
+          "spotify_url": "https://open.spotify.com/track/1pacwLXyRO47ka0v6LTIiY"
+        }
+      },
+      {
+        "artist": "Travis Scott",
+        "title": "Nightcrawler",
+        "spotify": {
+          "id": "3xby7fOyqmeON8jsnom0AT",
+          "uri": "spotify:track:3xby7fOyqmeON8jsnom0AT",
+          "title": "Nightcrawler (feat. Swae Lee & Chief Keef)",
+          "artist": "Travis Scott",
+          "album": "Rodeo",
+          "spotify_url": "https://open.spotify.com/track/3xby7fOyqmeON8jsnom0AT"
+        }
+      },
+      {
+        "artist": "Drake",
+        "title": "The Ride",
+        "spotify": {
+          "id": "4xRxYWgAtL6pzRz94GlZlA",
+          "uri": "spotify:track:4xRxYWgAtL6pzRz94GlZlA",
+          "title": "The Ride",
+          "artist": "Drake",
+          "album": "Take Care (Deluxe)",
+          "spotify_url": "https://open.spotify.com/track/4xRxYWgAtL6pzRz94GlZlA"
+        }
+      },
+      {
+        "artist": "Metro Boomin, Future",
+        "title": "Superhero (Heroes & Villains)",
+        "spotify": {
+          "id": "0vjeOZ3Ft5jvAi9SBFJm1j",
+          "uri": "spotify:track:0vjeOZ3Ft5jvAi9SBFJm1j",
+          "title": "Superhero (Heroes & Villains) [with Future & Chris Brown]",
+          "artist": "Metro Boomin",
+          "album": "HEROES & VILLAINS",
+          "spotify_url": "https://open.spotify.com/track/0vjeOZ3Ft5jvAi9SBFJm1j"
+        }
+      },
+      {
+        "artist": "Travis Scott",
+        "title": "sdp interlude",
+        "spotify": {
+          "id": "4gh0ZnHzaTMT1sDga7Ek0N",
+          "uri": "spotify:track:4gh0ZnHzaTMT1sDga7Ek0N",
+          "title": "sdp interlude",
+          "artist": "Travis Scott",
+          "album": "Birds In The Trap Sing McKnight",
+          "spotify_url": "https://open.spotify.com/track/4gh0ZnHzaTMT1sDga7Ek0N"
+        }
+      },
+      {
+        "artist": "Drake",
+        "title": "Jaded",
+        "spotify": {
+          "id": "4c2xt1trwYZpMqPWY35Xi9",
+          "uri": "spotify:track:4c2xt1trwYZpMqPWY35Xi9",
+          "title": "Jaded",
+          "artist": "Drake",
+          "album": "Scorpion",
+          "spotify_url": "https://open.spotify.com/track/4c2xt1trwYZpMqPWY35Xi9"
+        }
+      },
+      {
+        "artist": "Metro Boomin, 21 Savage",
+        "title": "Glock In My Lap",
+        "spotify": {
+          "id": "6pcywuOeGGWeOQzdUyti6k",
+          "uri": "spotify:track:6pcywuOeGGWeOQzdUyti6k",
+          "title": "Glock In My Lap",
+          "artist": "21 Savage",
+          "album": "SAVAGE MODE II",
+          "spotify_url": "https://open.spotify.com/track/6pcywuOeGGWeOQzdUyti6k"
+        }
+      },
+      {
+        "artist": "Travis Scott",
+        "title": "Houstonfornication",
+        "spotify": {
+          "id": "58TaFP5j5i9swOf584yon2",
+          "uri": "spotify:track:58TaFP5j5i9swOf584yon2",
+          "title": "HOUSTONFORNICATION",
+          "artist": "Travis Scott",
+          "album": "ASTROWORLD",
+          "spotify_url": "https://open.spotify.com/track/58TaFP5j5i9swOf584yon2"
+        }
+      },
+      {
+        "artist": "Drake",
+        "title": "Star67",
+        "spotify": {
+          "id": "2mmUoyPxzbxehpfm1TpTRK",
+          "uri": "spotify:track:2mmUoyPxzbxehpfm1TpTRK",
+          "title": "Star67",
+          "artist": "Drake",
+          "album": "If You're Reading This It's Too Late",
+          "spotify_url": "https://open.spotify.com/track/2mmUoyPxzbxehpfm1TpTRK"
+        }
+      },
+      {
+        "artist": "Metro Boomin, The Weeknd",
+        "title": "Creepin'",
+        "spotify": {
+          "id": "2dHHgzDwk4BJdRwy9uXhTO",
+          "uri": "spotify:track:2dHHgzDwk4BJdRwy9uXhTO",
+          "title": "Creepin' (with The Weeknd & 21 Savage)",
+          "artist": "Metro Boomin",
+          "album": "HEROES & VILLAINS",
+          "spotify_url": "https://open.spotify.com/track/2dHHgzDwk4BJdRwy9uXhTO"
+        }
+      },
+      {
+        "artist": "Travis Scott",
+        "title": "Astrothunder",
+        "spotify": {
+          "id": "4MXhiYIRDMGAuvZc5IFTwC",
+          "uri": "spotify:track:4MXhiYIRDMGAuvZc5IFTwC",
+          "title": "ASTROTHUNDER",
+          "artist": "Travis Scott",
+          "album": "ASTROWORLD",
+          "spotify_url": "https://open.spotify.com/track/4MXhiYIRDMGAuvZc5IFTwC"
+        }
+      },
+      {
+        "artist": "Drake",
+        "title": "Pipe Down",
+        "spotify": {
+          "id": "11pEKMLmavDu8fxOB5QjbQ",
+          "uri": "spotify:track:11pEKMLmavDu8fxOB5QjbQ",
+          "title": "Pipe Down",
+          "artist": "Drake",
+          "album": "Certified Lover Boy",
+          "spotify_url": "https://open.spotify.com/track/11pEKMLmavDu8fxOB5QjbQ"
+        }
+      },
+      {
+        "artist": "Metro Boomin, Travis Scott, Young Thug",
+        "title": "Trance",
+        "spotify": {
+          "id": "5wG3HvLhF6Y5KTGlK0IW3J",
+          "uri": "spotify:track:5wG3HvLhF6Y5KTGlK0IW3J",
+          "title": "Trance (with Travis Scott & Young Thug)",
+          "artist": "Metro Boomin",
+          "album": "HEROES & VILLAINS",
+          "spotify_url": "https://open.spotify.com/track/5wG3HvLhF6Y5KTGlK0IW3J"
+        }
+      },
+      {
+        "artist": "Travis Scott",
+        "title": "Maria I'm Drunk",
+        "spotify": {
+          "id": "6Yqmv7XJLCrQEauMbPGZSw",
+          "uri": "spotify:track:6Yqmv7XJLCrQEauMbPGZSw",
+          "title": "Maria I'm Drunk (feat. Justin Bieber & Young Thug)",
+          "artist": "Travis Scott",
+          "album": "Rodeo",
+          "spotify_url": "https://open.spotify.com/track/6Yqmv7XJLCrQEauMbPGZSw"
+        }
+      },
+      {
+        "artist": "Drake",
+        "title": "Doing It Wrong",
+        "spotify": {
+          "id": "4eSGSqP2TZvvX0kadZZttM",
+          "uri": "spotify:track:4eSGSqP2TZvvX0kadZZttM",
+          "title": "Doing It Wrong",
+          "artist": "Drake",
+          "album": "Take Care (Deluxe)",
+          "spotify_url": "https://open.spotify.com/track/4eSGSqP2TZvvX0kadZZttM"
+        }
+      },
+      {
+        "artist": "Metro Boomin, Don Toliver",
+        "title": "Too Many Nights",
+        "spotify": {
+          "id": "2Hh3ETdQKrmSI3QS0hme7g",
+          "uri": "spotify:track:2Hh3ETdQKrmSI3QS0hme7g",
+          "title": "Too Many Nights (feat. Don Toliver & with Future)",
+          "artist": "Metro Boomin",
+          "album": "HEROES & VILLAINS",
+          "spotify_url": "https://open.spotify.com/track/2Hh3ETdQKrmSI3QS0hme7g"
+        }
+      },
+      {
+        "artist": "Travis Scott",
+        "title": "90210",
+        "spotify": {
+          "id": "51EC3I1nQXpec4gDk0mQyP",
+          "uri": "spotify:track:51EC3I1nQXpec4gDk0mQyP",
+          "title": "90210 (feat. Kacy Hill)",
+          "artist": "Travis Scott",
+          "album": "Rodeo",
+          "spotify_url": "https://open.spotify.com/track/51EC3I1nQXpec4gDk0mQyP"
+        }
+      },
+      {
+        "artist": "Drake",
+        "title": "Feel No Ways",
+        "spotify": {
+          "id": "3cjF2OFRmip8spwZYQRKxP",
+          "uri": "spotify:track:3cjF2OFRmip8spwZYQRKxP",
+          "title": "Feel No Ways",
+          "artist": "Drake",
+          "album": "Views",
+          "spotify_url": "https://open.spotify.com/track/3cjF2OFRmip8spwZYQRKxP"
+        }
+      }
+    ]
+  }
+}
