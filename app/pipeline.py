@@ -72,23 +72,28 @@ def evaluate_playlist(playlist: dict, expected_length: int) -> dict:
     }
 
 def passes_quality_gate(scores: dict) -> bool:
+    # Require high Spotify coverage, strong confidence, no duplicates, and the
+    # exact requested playlist length before allowing publication.
     return (
         scores["spotify_match"] >= 0.95
-        and scores["spotify_match_confidence"] >= 0.70
+        and scores["spotify_match_confidence"] >= 0.70  # Need to evaluate later with LLM instead
         and scores["duplicates"] == 1.0
         and scores["playlist_length"] == 1.0
     )
 
 
 def publish_playlist(playlist: dict) -> dict:
+    # Read the generated songs from the normalized playlist payload.
     songs = playlist["playlist"]["songs"]
 
+    # Only include tracks that successfully resolved to Spotify metadata.
     track_uris = [
         song["spotify"]["uri"]
         for song in songs
         if song.get("spotify") is not None
     ]
 
+    # Create the final public playlist with the generated metadata and track list.
     return create_playlist(
         name=playlist["playlist"]["name"],
         description=playlist["playlist"]["description"],

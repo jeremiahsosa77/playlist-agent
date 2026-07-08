@@ -1,6 +1,5 @@
 braintrust
 google-genai
 python-dotenv
-spotipy
 requests
-pydantic
+spotipy
