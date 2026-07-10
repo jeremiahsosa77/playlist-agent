@@ -1,89 +1,61 @@
-"""Runnable demo entry point for Playlist Agent."""
+"""FastAPI application entry point for Playlist Agent."""
 
-from app.pipeline import (
-    enrich_playlist,
-    evaluate_playlist,
-    generate_playlist,
-    passes_quality_gate,
-    publish_playlist,
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+
+from app.api.errors import register_exception_handlers
+from app.api.routes import (
+    configuration_router,
+    health_router,
+    playlists_router,
+)
+from app.config import (
+    API_PREFIX,
+    APP_NAME,
+    APP_VERSION,
+    get_cors_origins,
 )
 
 
-USER_INPUT = {
-    "artists": [
-        "The Marias",
-        "Daniel Caesar",
-        "Steve Lacy",
-        "Brent Faiyaz",
-        "Kali Uchis",
-        "Tame Impala",
-        "Beabadoobee",
-        "Faye Webster",
-        "Mac DeMarco",
-        "Men I Trust",
-        "Laufey",
-        "Malcolm Todd"
-    ],
-    "genres": [
-        "Lo-Fi R&B",
-        "Bedroom Pop",
-        "Dream Pop",
-        "Chill Indie Pop",
-        "Alternative Soul",
-        "Jazz Pop"
-    ],
-    "mood": (
-        "Chill and upbeat vibes for a long drive, a mix of cool, relaxing tracks with a strong touch of jam worthy "
-        "songs that will keep the mood alive on the road"
-    ),
-    "playlist_length": 10,
-}
-
-
-def main() -> None:
+def create_application() -> FastAPI:
     """
-    Run the complete playlist generation and publishing workflow.
+    Create and configure the Playlist Agent API.
     """
-    print("Generating playlist...")
-
-    playlist = generate_playlist(
-        USER_INPUT
+    application = FastAPI(
+        title=APP_NAME,
+        version=APP_VERSION,
+        description=(
+            "Conversational AI playlist generation, Spotify enrichment, "
+            "quality evaluation, and publishing API."
+        ),
     )
 
-    print("Enriching playlist with Spotify...")
-
-    playlist = enrich_playlist(
-        playlist
+    application.add_middleware(
+        CORSMiddleware,
+        allow_origins=get_cors_origins(),
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"],
     )
 
-    print("Evaluating playlist...")
-
-    scores = evaluate_playlist(
-        playlist,
-        expected_length=USER_INPUT[
-            "playlist_length"
-        ],
+    application.include_router(
+        health_router,
+        prefix=API_PREFIX,
+    )
+    application.include_router(
+        configuration_router,
+        prefix=API_PREFIX,
+    )
+    application.include_router(
+        playlists_router,
+        prefix=API_PREFIX,
     )
 
-    print(scores)
-
-    if not passes_quality_gate(scores):
-        print(
-            "Playlist did not pass "
-            "the quality gate."
-        )
-        return
-
-    print("Publishing playlist to Spotify...")
-
-    result = publish_playlist(
-        playlist,
-        public=True,
+    register_exception_handlers(
+        application
     )
 
-    print("Playlist created!")
-    print(result)
+    return application
 
 
-if __name__ == "__main__":
-    main()
+app = create_application()
