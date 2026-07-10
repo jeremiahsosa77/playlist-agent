@@ -1,11 +1,6 @@
-''' Pipeline helpers for generating, enriching, and evaluating playlists. '''
+"""Pipeline helpers for generating, enriching, evaluating, and publishing playlists."""
 
-import json
-import os
-from dotenv import load_dotenv
-from google import genai
-
-from app.prompt import PLAYLIST_PROMPT
+from app.llm import generate_playlist_with_llm
 from app.spotify import search_song, create_playlist
 from evals.scorers import (
     spotify_match_rate,
@@ -14,86 +9,71 @@ from evals.scorers import (
     spotify_match_confidence_score,
 )
 
-load_dotenv()
 
-client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
-
-# Generates a playlist using the Gemini API.
 def generate_playlist(user_input: dict) -> dict:
-    prompt = PLAYLIST_PROMPT.format(
-        artists=", ".join(user_input["artists"]),
-        genres=", ".join(user_input["genres"]),
-        mood=user_input["mood"],
-        playlist_length=user_input["playlist_length"],
-    )
+    """
+    Generate a playlist using the configured LLM provider.
+    """
+    return generate_playlist_with_llm(user_input)
 
-    response = client.models.generate_content(
-        model="gemini-2.5-flash",
-        contents=prompt,
-    )
 
-    text = response.text.strip()
-
-    if text.startswith("```json"):
-        text = text.replace("```json", "").replace("```", "").strip()
-
-    return json.loads(text)
-
-# Enriches a playlist with Spotify metadata.
 def enrich_playlist(playlist: dict) -> dict:
-    # Add Spotify metadata to every song in the playlist.
     """
-    Takes a playlist and adds Spotify data to each song.
+    Add Spotify metadata to every song in the playlist.
     """
-    # Loop through each song and look it up on Spotify.
     for song in playlist["playlist"]["songs"]:
         song["spotify"] = search_song(
             song["title"],
-            song["artist"]
+            song["artist"],
         )
 
         if song["spotify"] is None:
             print(f"NO MATCH: {song['artist']} - {song['title']}")
-    # Return the updated playlist.
+
     return playlist
 
-# Evaluates a playlist using various scoring functions.
+
 def evaluate_playlist(playlist: dict, expected_length: int) -> dict:
-    # Compute the playlist quality metrics.
+    """
+    Evaluate the playlist using deterministic scoring functions.
+    """
     return {
-        # Measure how many songs matched Spotify.
         "spotify_match": spotify_match_rate(playlist),
-        # Measure duplicate songs.
         "duplicates": duplicate_song_score(playlist),
-        # Measure whether the playlist has the expected length.
-        "playlist_length": playlist_length_score(playlist, expected_length),
-        # Measure the confidence of Spotify matches.
-        "spotify_match_confidence": spotify_match_confidence_score(playlist),
+        "playlist_length": playlist_length_score(
+            playlist,
+            expected_length,
+        ),
+        "spotify_match_confidence": spotify_match_confidence_score(
+            playlist
+        ),
     }
 
+
 def passes_quality_gate(scores: dict) -> bool:
-    # Require high Spotify coverage, strong confidence, no duplicates, and the
-    # exact requested playlist length before allowing publication.
+    """
+    Decide whether the playlist is good enough to publish.
+    """
     return (
         scores["spotify_match"] >= 0.95
-        and scores["spotify_match_confidence"] >= 0.70  # Need to evaluate later with LLM instead
+        and scores["spotify_match_confidence"] >= 0.70
         and scores["duplicates"] == 1.0
         and scores["playlist_length"] == 1.0
     )
 
 
 def publish_playlist(playlist: dict) -> dict:
-    # Read the generated songs from the normalized playlist payload.
+    """
+    Create the final playlist in Spotify.
+    """
     songs = playlist["playlist"]["songs"]
 
-    # Only include tracks that successfully resolved to Spotify metadata.
     track_uris = [
         song["spotify"]["uri"]
         for song in songs
         if song.get("spotify") is not None
     ]
 
-    # Create the final public playlist with the generated metadata and track list.
     return create_playlist(
         name=playlist["playlist"]["name"],
         description=playlist["playlist"]["description"],

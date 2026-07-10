@@ -1,20 +1,23 @@
-''' Evaluation entry point for the playlist agent. '''
+"""Evaluation entry point for the playlist agent."""
 
 import json
-from dotenv import load_dotenv
-from braintrust import Eval
+import os
 
-from app.pipeline import generate_playlist, enrich_playlist, evaluate_playlist
+from braintrust import Eval
+from dotenv import load_dotenv
+
+from app.pipeline import (
+    enrich_playlist,
+    evaluate_playlist,
+    generate_playlist,
+)
 
 load_dotenv()
 
 
 def load_data():
-    # Load evaluation examples from the local dataset file and map
-    # each item into the shape expected by the Eval harness. The
-    # `expected` field is reserved for ground-truth values when
-    # available (not used in this dataset).
-    with open("evals/dataset.json", "r") as file:
+    """Load local evaluation cases in Braintrust's expected format."""
+    with open("evals/dataset.json", "r", encoding="utf-8") as file:
         data = json.load(file)
 
     return [
@@ -27,45 +30,60 @@ def load_data():
 
 
 def task(input):
-    # Compose the pipeline steps used by the evaluator: generate an
-    # initial playlist and then enrich it with external metadata.
+    """Generate and enrich one candidate playlist."""
     playlist = generate_playlist(input)
-    enriched_playlist = enrich_playlist(playlist)
-    return enriched_playlist
+    return enrich_playlist(playlist)
 
 
 def get_scores(input, output):
-    # Run the shared evaluation routine that computes named quality
-    # metrics for the supplied playlist output.
+    """Run all shared deterministic playlist scorers."""
     return evaluate_playlist(
         output,
-        expected_length=input["playlist_length"]
+        expected_length=input["playlist_length"],
     )
 
 
 def spotify_match_scorer(input, output, expected):
-    # Extract the Spotify-match rate metric for the evaluator.
     return get_scores(input, output)["spotify_match"]
 
 
 def duplicate_song_scorer(input, output, expected):
-    # Return the duplicate-song check (1.0 == no duplicates).
     return get_scores(input, output)["duplicates"]
 
 
 def playlist_length_scorer(input, output, expected):
-    # Score whether the playlist length matches the requested length.
     return get_scores(input, output)["playlist_length"]
 
 
 def spotify_match_confidence_scorer(input, output, expected):
-    # Score how closely returned Spotify titles match the originals.
     return get_scores(input, output)["spotify_match_confidence"]
 
 
-# Instantiate the Eval harness with the dataset, task function, and the
-# list of scoring functions. `experiment_name` is used by the backend to
-# group results.
+def get_experiment_name() -> str:
+    """
+    Build an experiment name from the active provider and model.
+
+    Examples:
+    openrouter--nvidia-nemotron-3-ultra-550b-a55b-free
+    gemini--gemini-2-5-flash
+    """
+    provider = os.getenv("LLM_PROVIDER", "gemini").lower()
+
+    if provider == "openrouter":
+        model = os.getenv("OPENROUTER_MODEL", "unknown-model")
+    else:
+        model = os.getenv("GEMINI_MODEL", "gemini-2.5-flash")
+
+    safe_model_name = (
+        model.lower()
+        .replace("/", "-")
+        .replace(":", "-")
+        .replace(".", "-")
+    )
+
+    return f"{provider}--{safe_model_name}"
+
+
 Eval(
     "Playlist Agent",
     data=load_data,
@@ -76,5 +94,5 @@ Eval(
         playlist_length_scorer,
         spotify_match_confidence_scorer,
     ],
-    experiment_name="gemini-spotify-v1",
+    experiment_name=get_experiment_name(),
 )
