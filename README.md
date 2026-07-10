@@ -177,3 +177,11 @@ Compare models, prompts, and temperatures.
 Add automatic retry and playlist refinement.
 Store user likes, dislikes, skips, and playlist ratings.
 Add a frontend and user onboarding flow.
+
+
+
+
+https://openrouter.ai/
+https://aistudio.google.com/
+https://www.braintrust.dev/
+https://developer.spotify.com/documentation/web-api
