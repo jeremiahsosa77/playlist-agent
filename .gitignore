@@ -2,6 +2,7 @@
 .cache
 .spotify_search_cache.json
 .spotify_search_cache.tmp
+.spotify_caches/
 
 __pycache__/
 *.pyc
