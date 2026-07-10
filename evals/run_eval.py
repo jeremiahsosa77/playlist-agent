@@ -1,7 +1,8 @@
-"""Evaluation entry point for the playlist agent."""
+"""Braintrust evaluation entry point for Playlist Agent."""
 
 import json
 import os
+import threading
 
 from braintrust import Eval
 from dotenv import load_dotenv
@@ -12,12 +13,25 @@ from app.pipeline import (
     generate_playlist,
 )
 
+
 load_dotenv()
 
 
-def load_data():
-    """Load local evaluation cases in Braintrust's expected format."""
-    with open("evals/dataset.json", "r", encoding="utf-8") as file:
+# Braintrust may execute dataset cases concurrently. The current MVP uses
+# one shared Spotify client, so we serialize external API work to avoid
+# overwhelming Spotify or hitting short network timeouts.
+TASK_LOCK = threading.Lock()
+
+
+def load_data() -> list[dict]:
+    """
+    Load local evaluation inputs in Braintrust's expected format.
+    """
+    with open(
+        "evals/dataset.json",
+        "r",
+        encoding="utf-8",
+    ) as file:
         data = json.load(file)
 
     return [
@@ -29,56 +43,106 @@ def load_data():
     ]
 
 
-def task(input):
-    """Generate and enrich one candidate playlist."""
-    playlist = generate_playlist(input)
-    return enrich_playlist(playlist)
+def task(input: dict) -> dict:
+    """
+    Generate and enrich one playlist candidate.
+
+    External API work is currently serialized for reliability.
+    """
+    with TASK_LOCK:
+        playlist = generate_playlist(input)
+        return enrich_playlist(playlist)
 
 
-def get_scores(input, output):
-    """Run all shared deterministic playlist scorers."""
+def get_scores(
+    input: dict,
+    output: dict,
+) -> dict:
+    """
+    Run the shared deterministic playlist evaluation.
+    """
     return evaluate_playlist(
         output,
         expected_length=input["playlist_length"],
     )
 
 
-def spotify_match_scorer(input, output, expected):
-    return get_scores(input, output)["spotify_match"]
+def spotify_match_scorer(
+    input,
+    output,
+    expected,
+):
+    return get_scores(
+        input,
+        output,
+    )["spotify_match"]
 
 
-def duplicate_song_scorer(input, output, expected):
-    return get_scores(input, output)["duplicates"]
+def duplicate_song_scorer(
+    input,
+    output,
+    expected,
+):
+    return get_scores(
+        input,
+        output,
+    )["duplicates"]
 
 
-def playlist_length_scorer(input, output, expected):
-    return get_scores(input, output)["playlist_length"]
+def playlist_length_scorer(
+    input,
+    output,
+    expected,
+):
+    return get_scores(
+        input,
+        output,
+    )["playlist_length"]
 
 
-def spotify_match_confidence_scorer(input, output, expected):
-    return get_scores(input, output)["spotify_match_confidence"]
+def spotify_match_confidence_scorer(
+    input,
+    output,
+    expected,
+):
+    return get_scores(
+        input,
+        output,
+    )["spotify_match_confidence"]
 
 
 def get_experiment_name() -> str:
     """
-    Build an experiment name from the active provider and model.
-
-    Examples:
-    openrouter--nvidia-nemotron-3-ultra-550b-a55b-free
-    gemini--gemini-2-5-flash
+    Build a Braintrust experiment name from the active provider and model.
     """
-    provider = os.getenv("LLM_PROVIDER", "gemini").lower()
+    provider = os.getenv(
+        "LLM_PROVIDER",
+        "gemini",
+    ).strip().lower()
 
     if provider == "openrouter":
-        model = os.getenv("OPENROUTER_MODEL", "unknown-model")
+        model = os.getenv(
+            "OPENROUTER_MODEL",
+            "unknown-model",
+        )
+    elif provider == "gemini":
+        model = os.getenv(
+            "GEMINI_MODEL",
+            "gemini-2.5-flash",
+        )
     else:
-        model = os.getenv("GEMINI_MODEL", "gemini-2.5-flash")
+        model = os.getenv(
+            "LLM_MODEL",
+            "unknown-model",
+        )
 
     safe_model_name = (
-        model.lower()
+        model.strip()
+        .lower()
         .replace("/", "-")
         .replace(":", "-")
         .replace(".", "-")
+        .replace("_", "-")
     )
 
     return f"{provider}--{safe_model_name}"

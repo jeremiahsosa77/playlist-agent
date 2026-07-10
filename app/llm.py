@@ -1,37 +1,55 @@
+"""LLM provider integrations for playlist generation."""
+
 import json
 import os
+
 import requests
-from dotenv import load_dotenv
 from google import genai
 
+from app.config import (
+    GEMINI_MODEL,
+    LLM_PROVIDER,
+    LLM_TEMPERATURE,
+    OPENROUTER_MODEL,
+    OPENROUTER_REQUEST_TIMEOUT,
+)
 from app.prompt import PLAYLIST_PROMPT
 
-load_dotenv()
 
-gemini_client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
+gemini_client = genai.Client(
+    api_key=os.getenv("GEMINI_API_KEY")
+)
 
 
 def clean_json_response(text: str) -> dict:
-    text = text.strip()
+    """
+    Remove common Markdown code fences and parse an LLM response as JSON.
+    """
+    if not text:
+        raise ValueError("The LLM returned an empty response.")
 
-    if text.startswith("```json"):
-        text = text.replace("```json", "").replace("```", "").strip()
-    elif text.startswith("```"):
-        text = text.replace("```", "").strip()
+    cleaned_text = text.strip()
 
-    return json.loads(text)
+    if cleaned_text.startswith("```json"):
+        cleaned_text = cleaned_text[len("```json"):].strip()
+    elif cleaned_text.startswith("```"):
+        cleaned_text = cleaned_text[len("```"):].strip()
 
+    if cleaned_text.endswith("```"):
+        cleaned_text = cleaned_text[:-3].strip()
 
-def generate_playlist_with_llm(user_input: dict) -> dict:
-    provider = os.getenv("LLM_PROVIDER", "gemini")
-
-    if provider == "openrouter":
-        return generate_with_openrouter(user_input)
-
-    return generate_with_gemini(user_input)
+    try:
+        return json.loads(cleaned_text)
+    except json.JSONDecodeError as error:
+        raise ValueError(
+            "The LLM response was not valid JSON."
+        ) from error
 
 
 def build_prompt(user_input: dict) -> str:
+    """
+    Build the playlist-generation prompt from normalized user input.
+    """
     return PLAYLIST_PROMPT.format(
         artists=", ".join(user_input["artists"]),
         genres=", ".join(user_input["genres"]),
@@ -40,11 +58,29 @@ def build_prompt(user_input: dict) -> str:
     )
 
 
+def generate_playlist_with_llm(user_input: dict) -> dict:
+    """
+    Generate a playlist with the active provider configured in `.env`.
+    """
+    if LLM_PROVIDER == "openrouter":
+        return generate_with_openrouter(user_input)
+
+    if LLM_PROVIDER == "gemini":
+        return generate_with_gemini(user_input)
+
+    raise ValueError(
+        f"Unsupported LLM provider: {LLM_PROVIDER}"
+    )
+
+
 def generate_with_gemini(user_input: dict) -> dict:
+    """
+    Generate a playlist using Google Gemini.
+    """
     prompt = build_prompt(user_input)
 
     response = gemini_client.models.generate_content(
-        model=os.getenv("GEMINI_MODEL", "gemini-2.5-flash"),
+        model=GEMINI_MODEL,
         contents=prompt,
     )
 
@@ -52,45 +88,65 @@ def generate_with_gemini(user_input: dict) -> dict:
 
 
 def generate_with_openrouter(user_input: dict) -> dict:
+    """
+    Generate a playlist using an OpenRouter chat-completions model.
+    """
     prompt = build_prompt(user_input)
 
-    model = os.getenv(
-        "OPENROUTER_MODEL",
-        "nvidia/nemotron-3-ultra-550b-a55b:free",
-    )
+    api_key = os.getenv("OPENROUTER_API_KEY")
 
-    print(f"Sending request to OpenRouter using {model}...")
+    if not api_key:
+        raise ValueError(
+            "OPENROUTER_API_KEY is missing from the environment."
+        )
+
+    print(
+        f"Sending request to OpenRouter using "
+        f"{OPENROUTER_MODEL}..."
+    )
 
     try:
         response = requests.post(
             "https://openrouter.ai/api/v1/chat/completions",
             headers={
-                "Authorization": f"Bearer {os.getenv('OPENROUTER_API_KEY')}",
+                "Authorization": f"Bearer {api_key}",
                 "Content-Type": "application/json",
                 "X-OpenRouter-Title": "Playlist Agent",
             },
             json={
-                "model": model,
+                "model": OPENROUTER_MODEL,
                 "messages": [
                     {
                         "role": "user",
                         "content": prompt,
                     }
                 ],
-                "temperature": 0.7,
+                "temperature": LLM_TEMPERATURE,
             },
-            timeout=(10, 90),
+            timeout=OPENROUTER_REQUEST_TIMEOUT,
         )
 
-        print(f"OpenRouter status: {response.status_code}")
+        print(
+            f"OpenRouter status: "
+            f"{response.status_code}"
+        )
 
         if not response.ok:
-            print(response.text)
-
-        response.raise_for_status()
+            raise RuntimeError(
+                "OpenRouter returned an error: "
+                f"{response.status_code} {response.text}"
+            )
 
         data = response.json()
-        text = data["choices"][0]["message"]["content"]
+
+        choices = data.get("choices", [])
+
+        if not choices:
+            raise ValueError(
+                "OpenRouter returned no completion choices."
+            )
+
+        text = choices[0]["message"]["content"]
 
         print("Playlist received from OpenRouter.")
 
@@ -98,7 +154,7 @@ def generate_with_openrouter(user_input: dict) -> dict:
 
     except requests.Timeout as error:
         raise RuntimeError(
-            "OpenRouter timed out. Try running it again or selecting a smaller free model."
+            "OpenRouter timed out while generating the playlist."
         ) from error
 
     except requests.RequestException as error:

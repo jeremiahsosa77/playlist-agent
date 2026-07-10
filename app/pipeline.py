@@ -1,12 +1,16 @@
-"""Pipeline helpers for generating, enriching, evaluating, and publishing playlists."""
+"""Core playlist generation, enrichment, evaluation, and publishing pipeline."""
 
+from app.config import (
+    SPOTIFY_CONFIDENCE_THRESHOLD,
+    SPOTIFY_MATCH_THRESHOLD,
+)
 from app.llm import generate_playlist_with_llm
-from app.spotify import search_song, create_playlist
+from app.spotify import create_playlist, search_song
 from evals.scorers import (
-    spotify_match_rate,
     duplicate_song_score,
     playlist_length_score,
     spotify_match_confidence_score,
+    spotify_match_rate,
 )
 
 
@@ -19,52 +23,70 @@ def generate_playlist(user_input: dict) -> dict:
 
 def enrich_playlist(playlist: dict) -> dict:
     """
-    Add Spotify metadata to every song in the playlist.
+    Add Spotify metadata to every generated song.
     """
-    for song in playlist["playlist"]["songs"]:
+    songs = playlist["playlist"]["songs"]
+
+    for song in songs:
         song["spotify"] = search_song(
-            song["title"],
-            song["artist"],
+            title=song["title"],
+            artist=song["artist"],
         )
 
         if song["spotify"] is None:
-            print(f"NO MATCH: {song['artist']} - {song['title']}")
+            print(
+                f"NO MATCH: "
+                f"{song['artist']} - {song['title']}"
+            )
 
     return playlist
 
 
-def evaluate_playlist(playlist: dict, expected_length: int) -> dict:
+def evaluate_playlist(
+    playlist: dict,
+    expected_length: int,
+) -> dict:
     """
-    Evaluate the playlist using deterministic scoring functions.
+    Evaluate a playlist using deterministic scoring functions.
     """
     return {
-        "spotify_match": spotify_match_rate(playlist),
-        "duplicates": duplicate_song_score(playlist),
+        "spotify_match": spotify_match_rate(
+            playlist
+        ),
+        "duplicates": duplicate_song_score(
+            playlist
+        ),
         "playlist_length": playlist_length_score(
             playlist,
             expected_length,
         ),
-        "spotify_match_confidence": spotify_match_confidence_score(
-            playlist
-        ),
+        "spotify_match_confidence":
+            spotify_match_confidence_score(
+                playlist
+            ),
     }
 
 
 def passes_quality_gate(scores: dict) -> bool:
     """
-    Decide whether the playlist is good enough to publish.
+    Return True when the playlist satisfies all publication thresholds.
     """
     return (
-        scores["spotify_match"] >= 0.95
-        and scores["spotify_match_confidence"] >= 0.70
+        scores["spotify_match"]
+        >= SPOTIFY_MATCH_THRESHOLD
+        and scores["spotify_match_confidence"]
+        >= SPOTIFY_CONFIDENCE_THRESHOLD
         and scores["duplicates"] == 1.0
         and scores["playlist_length"] == 1.0
     )
 
 
-def publish_playlist(playlist: dict) -> dict:
+def publish_playlist(
+    playlist: dict,
+    public: bool = True,
+) -> dict:
     """
-    Create the final playlist in Spotify.
+    Publish an enriched playlist to the authenticated Spotify account.
     """
     songs = playlist["playlist"]["songs"]
 
@@ -74,9 +96,14 @@ def publish_playlist(playlist: dict) -> dict:
         if song.get("spotify") is not None
     ]
 
+    if not track_uris:
+        raise ValueError(
+            "The playlist contains no valid Spotify tracks."
+        )
+
     return create_playlist(
         name=playlist["playlist"]["name"],
         description=playlist["playlist"]["description"],
         track_uris=track_uris,
-        public=True,
+        public=public,
     )
