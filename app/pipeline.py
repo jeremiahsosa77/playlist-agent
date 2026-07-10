@@ -1,109 +1,86 @@
-"""Core playlist generation, enrichment, evaluation, and publishing pipeline."""
+"""
+Compatibility orchestration layer for Playlist Agent.
 
-from app.config import (
-    SPOTIFY_CONFIDENCE_THRESHOLD,
-    SPOTIFY_MATCH_THRESHOLD,
+The public functions in this module are preserved for the command-line demo,
+Braintrust evaluations, and future callers. Business responsibilities are
+delegated to focused application services.
+"""
+
+from typing import Any
+
+from app.services import (
+    EvaluationService,
+    PlaylistGenerationService,
+    PublishingService,
+    SpotifyService,
 )
-from app.llm import generate_playlist_with_llm
-from app.spotify import create_playlist, search_song
-from evals.scorers import (
-    duplicate_song_score,
-    playlist_length_score,
-    spotify_match_confidence_score,
-    spotify_match_rate,
-)
 
 
-def generate_playlist(user_input: dict) -> dict:
+PlaylistData = dict[str, Any]
+EvaluationScores = dict[str, float]
+PublishedPlaylist = dict[str, Any]
+
+
+playlist_generation_service = PlaylistGenerationService()
+spotify_service = SpotifyService()
+evaluation_service = EvaluationService()
+publishing_service = PublishingService()
+
+
+def generate_playlist(
+    user_input: dict[str, Any],
+) -> PlaylistData:
     """
     Generate a playlist using the configured LLM provider.
     """
-    return generate_playlist_with_llm(user_input)
+    return playlist_generation_service.generate(
+        user_input
+    )
 
 
-def enrich_playlist(playlist: dict) -> dict:
+def enrich_playlist(
+    playlist: PlaylistData,
+) -> PlaylistData:
     """
     Add Spotify metadata to every generated song.
     """
-    songs = playlist["playlist"]["songs"]
-
-    for song in songs:
-        song["spotify"] = search_song(
-            title=song["title"],
-            artist=song["artist"],
-        )
-
-        if song["spotify"] is None:
-            print(
-                f"NO MATCH: "
-                f"{song['artist']} - {song['title']}"
-            )
-
-    return playlist
+    return spotify_service.enrich_playlist(
+        playlist
+    )
 
 
 def evaluate_playlist(
-    playlist: dict,
+    playlist: PlaylistData,
     expected_length: int,
-) -> dict:
+) -> EvaluationScores:
     """
     Evaluate a playlist using deterministic scoring functions.
     """
-    return {
-        "spotify_match": spotify_match_rate(
-            playlist
-        ),
-        "duplicates": duplicate_song_score(
-            playlist
-        ),
-        "playlist_length": playlist_length_score(
-            playlist,
-            expected_length,
-        ),
-        "spotify_match_confidence":
-            spotify_match_confidence_score(
-                playlist
-            ),
-    }
+    return evaluation_service.evaluate(
+        playlist,
+        expected_length,
+    )
 
 
-def passes_quality_gate(scores: dict) -> bool:
+def passes_quality_gate(
+    scores: EvaluationScores,
+) -> bool:
     """
-    Return True when the playlist satisfies all publication thresholds.
+    Return whether the playlist meets publication requirements.
     """
-    return (
-        scores["spotify_match"]
-        >= SPOTIFY_MATCH_THRESHOLD
-        and scores["spotify_match_confidence"]
-        >= SPOTIFY_CONFIDENCE_THRESHOLD
-        and scores["duplicates"] == 1.0
-        and scores["playlist_length"] == 1.0
+    return evaluation_service.passes_quality_gate(
+        scores
     )
 
 
 def publish_playlist(
-    playlist: dict,
+    playlist: PlaylistData,
     public: bool = True,
-) -> dict:
+) -> PublishedPlaylist:
     """
     Publish an enriched playlist to the authenticated Spotify account.
     """
-    songs = playlist["playlist"]["songs"]
-
-    track_uris = [
-        song["spotify"]["uri"]
-        for song in songs
-        if song.get("spotify") is not None
-    ]
-
-    if not track_uris:
-        raise ValueError(
-            "The playlist contains no valid Spotify tracks."
-        )
-
-    return create_playlist(
-        name=playlist["playlist"]["name"],
-        description=playlist["playlist"]["description"],
-        track_uris=track_uris,
+    return publishing_service.publish(
+        playlist,
         public=public,
     )

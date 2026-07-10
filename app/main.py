@@ -36,7 +36,7 @@ USER_INPUT = {
         "Chill and upbeat vibes for a long drive, a mix of cool, relaxing tracks with a strong touch of jam worthy "
         "songs that will keep the mood alive on the road"
     ),
-    "playlist_length": 85,
+    "playlist_length": 10,
 }
 
 
