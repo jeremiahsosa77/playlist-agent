@@ -1,10 +1,14 @@
 """Spotify search and playlist-publishing helpers."""
 
+import json
 import os
+from pathlib import Path
+from threading import Lock
 
 import requests
 import spotipy
 from dotenv import load_dotenv
+from spotipy.exceptions import SpotifyException
 from spotipy.oauth2 import SpotifyOAuth
 
 from app.config import SPOTIFY_REQUEST_TIMEOUT
@@ -18,6 +22,9 @@ SCOPE = (
     "playlist-modify-public"
 )
 
+CACHE_PATH = Path(".spotify_search_cache.json")
+CACHE_LOCK = Lock()
+
 
 sp = spotipy.Spotify(
     auth_manager=SpotifyOAuth(
@@ -26,15 +33,72 @@ sp = spotipy.Spotify(
         redirect_uri=os.getenv("SPOTIFY_REDIRECT_URI"),
         scope=SCOPE,
     ),
-    # Spotify searches may occasionally take longer than Spotipy's
-    # default five-second timeout.
     requests_timeout=30,
-
-    # Retry temporary network and Spotify server failures.
+    status_forcelist=(500, 502, 503, 504),
     retries=3,
     status_retries=3,
     backoff_factor=0.5,
 )
+
+
+def normalize_cache_text(value: str) -> str:
+    """Normalize song metadata for use in a cache key."""
+    return " ".join(
+        value.strip().lower().split()
+    )
+
+
+def build_cache_key(
+    title: str,
+    artist: str,
+) -> str:
+    """Build a stable cache key from a title and artist."""
+    normalized_title = normalize_cache_text(title)
+    normalized_artist = normalize_cache_text(artist)
+
+    return f"{normalized_artist}::{normalized_title}"
+
+
+def load_search_cache() -> dict:
+    """Load the local Spotify search cache."""
+    if not CACHE_PATH.exists():
+        return {}
+
+    try:
+        with CACHE_PATH.open(
+            "r",
+            encoding="utf-8",
+        ) as file:
+            data = json.load(file)
+
+        return data if isinstance(data, dict) else {}
+
+    except (
+        json.JSONDecodeError,
+        OSError,
+    ):
+        return {}
+
+
+def save_search_cache(cache: dict) -> None:
+    """Safely write the Spotify search cache to disk."""
+    temporary_path = CACHE_PATH.with_suffix(".tmp")
+
+    with temporary_path.open(
+        "w",
+        encoding="utf-8",
+    ) as file:
+        json.dump(
+            cache,
+            file,
+            indent=2,
+            ensure_ascii=False,
+        )
+
+    temporary_path.replace(CACHE_PATH)
+
+
+SPOTIFY_SEARCH_CACHE = load_search_cache()
 
 
 def search_song(
@@ -42,8 +106,26 @@ def search_song(
     artist: str,
 ) -> dict | None:
     """
-    Search Spotify for a song using progressively broader queries.
+    Search Spotify for a song using a local cache and progressively
+    broader API queries.
     """
+    cache_key = build_cache_key(
+        title=title,
+        artist=artist,
+    )
+
+    with CACHE_LOCK:
+        cached_result = SPOTIFY_SEARCH_CACHE.get(
+            cache_key
+        )
+
+    if cached_result is not None:
+        print(
+            f"Spotify cache hit: "
+            f"{artist} - {title}"
+        )
+        return cached_result
+
     queries = [
         f'track:"{title}" artist:"{artist}"',
         f'"{title}" "{artist}"',
@@ -58,6 +140,27 @@ def search_song(
                 type="track",
                 limit=1,
             )
+
+        except SpotifyException as error:
+            if error.http_status == 429:
+                headers = error.headers or {}
+                retry_after = headers.get(
+                    "Retry-After",
+                    "unknown",
+                )
+
+                raise RuntimeError(
+                    "Spotify rate limit reached. "
+                    f"Spotify requested a wait of "
+                    f"{retry_after} seconds."
+                ) from error
+
+            print(
+                "Spotify search failed for "
+                f"{artist} - {title}: {error}"
+            )
+            continue
+
         except requests.RequestException as error:
             print(
                 "Spotify search failed for "
@@ -75,7 +178,7 @@ def search_song(
 
         track = tracks[0]
 
-        return {
+        spotify_result = {
             "id": track["id"],
             "uri": track["uri"],
             "title": track["name"],
@@ -89,6 +192,17 @@ def search_song(
                 track["external_urls"]["spotify"]
             ),
         }
+
+        with CACHE_LOCK:
+            SPOTIFY_SEARCH_CACHE[
+                cache_key
+            ] = spotify_result
+
+            save_search_cache(
+                SPOTIFY_SEARCH_CACHE
+            )
+
+        return spotify_result
 
     return None
 
