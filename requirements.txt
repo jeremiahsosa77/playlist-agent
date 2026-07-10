@@ -1,5 +1,8 @@
 braintrust
+fastapi
 google-genai
+pydantic>=2.0
 python-dotenv
 requests
 spotipy
+uvicorn[standard]
