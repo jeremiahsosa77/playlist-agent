@@ -1,10 +1,16 @@
 """Conversation session application service."""
 
+from app.conversation.config import (
+    INTERVIEW_MAX_QUESTIONS,
+)
 from app.conversation.models import (
     ConversationMessage,
     ConversationSession,
     InterviewAction,
     utc_now,
+)
+from app.conversation.provider import (
+    InterviewDecisionProvider,
 )
 from app.conversation.session import (
     InMemoryConversationSessionStore,
@@ -27,13 +33,17 @@ class ConversationStateError(ValueError):
     """
 
 
+class ConversationProviderNotConfiguredError(
+    RuntimeError
+):
+    """
+    Raised when AI decision-making is requested without a provider.
+    """
+
+
 class ConversationService:
     """
     Manage adaptive playlist interview sessions.
-
-    This service currently manages state only. A future interview decision
-    provider will determine which structured InterviewAction should happen
-    after each user response.
     """
 
     def __init__(
@@ -42,11 +52,18 @@ class ConversationService:
             InMemoryConversationSessionStore
             | None
         ) = None,
+        decision_provider: (
+            InterviewDecisionProvider
+            | None
+        ) = None,
+        max_questions: int = INTERVIEW_MAX_QUESTIONS,
     ) -> None:
         self._session_store = (
             session_store
             or InMemoryConversationSessionStore()
         )
+        self._decision_provider = decision_provider
+        self._max_questions = max_questions
 
     def start_session(
         self,
@@ -112,6 +129,55 @@ class ConversationService:
         return self._session_store.save(
             session
         )
+
+    def respond_to_user(
+        self,
+        session_id: str,
+        content: str,
+    ) -> tuple[
+        ConversationSession,
+        InterviewAction,
+    ]:
+        """
+        Add a user response, request the next AI action, and apply it.
+        """
+        session = self.add_user_message(
+            session_id,
+            content,
+        )
+
+        if (
+            session.question_count
+            >= self._max_questions
+        ):
+            action = InterviewAction(
+                action=(
+                    InterviewActionType.READY_TO_GENERATE
+                ),
+                reasoning_summary=(
+                    "The interview reached its maximum "
+                    "question count."
+                ),
+            )
+        else:
+            if self._decision_provider is None:
+                raise (
+                    ConversationProviderNotConfiguredError(
+                        "No interview decision provider "
+                        "has been configured."
+                    )
+                )
+
+            action = self._decision_provider.decide(
+                session
+            )
+
+        updated_session = self.apply_action(
+            session.id,
+            action,
+        )
+
+        return updated_session, action
 
     def apply_action(
         self,

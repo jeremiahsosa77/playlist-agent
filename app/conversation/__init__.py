@@ -5,7 +5,18 @@ from app.conversation.models import (
     ConversationSession,
     InterviewAction,
 )
+from app.conversation.parser import (
+    InterviewResponseParseError,
+    parse_interview_action,
+)
+from app.conversation.provider import (
+    ConfiguredInterviewProvider,
+    GeneratedTextInterviewProvider,
+    InterviewDecisionProvider,
+    InterviewProviderError,
+)
 from app.conversation.service import (
+    ConversationProviderNotConfiguredError,
     ConversationService,
     ConversationStateError,
 )
@@ -21,14 +32,21 @@ from app.conversation.state import (
 
 
 __all__ = [
+    "ConfiguredInterviewProvider",
     "ConversationMessage",
+    "ConversationProviderNotConfiguredError",
     "ConversationRole",
     "ConversationService",
     "ConversationSession",
     "ConversationSessionNotFoundError",
     "ConversationStateError",
     "ConversationStatus",
+    "GeneratedTextInterviewProvider",
     "InMemoryConversationSessionStore",
     "InterviewAction",
     "InterviewActionType",
+    "InterviewDecisionProvider",
+    "InterviewProviderError",
+    "InterviewResponseParseError",
+    "parse_interview_action",
 ]

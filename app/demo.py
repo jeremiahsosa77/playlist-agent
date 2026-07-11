@@ -11,32 +11,29 @@ from app.pipeline import (
 
 USER_INPUT = {
     "artists": [
-        "The Marias",
-        "Daniel Caesar",
-        "Steve Lacy",
+        "Lil Tecca",
+        "Kanye West",
+        "21 Savage",
         "Brent Faiyaz",
-        "Kali Uchis",
-        "Tame Impala",
-        "Beabadoobee",
-        "Faye Webster",
-        "Mac DeMarco",
-        "Men I Trust",
-        "Laufey",
-        "Malcolm Todd",
+        "NAV",
+        "Chief Keef",
+        "Travis Scott",
+        "Drake",
+        "Bryson Tiller",
+        "Future",
+        "Key Glock",
+        "Gunna",
     ],
     "genres": [
-        "Lo-Fi R&B",
-        "Bedroom Pop",
-        "Dream Pop",
-        "Chill Indie Pop",
-        "Alternative Soul",
-        "Jazz Pop",
+        "R&B",
+        "Chill Rap",
+        "Dream Pop"
     ],
     "mood": (
-        "Chill and upbeat vibes for a long drive, with a mix of "
-        "relaxing and jam-worthy songs that keep the mood alive."
+        "Chill and smoke worthy vibes for a long drive, with a mix of "
+        "newer and older jam worthy songs that keep the mood alive while everyone is vibing and singing along."
     ),
-    "playlist_length": 10,
+    "playlist_length": 75,
 }
 
 
