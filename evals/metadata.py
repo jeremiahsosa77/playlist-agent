@@ -1,6 +1,7 @@
 """Braintrust experiment metadata utilities."""
 
 import subprocess
+from dataclasses import dataclass
 from typing import Any
 
 from app.config import (
@@ -15,14 +16,24 @@ from app.prompt import PROMPT_VERSION
 UNKNOWN_GIT_VALUE = "unavailable"
 
 
+@dataclass(frozen=True)
+class GitCommandResult:
+    """
+    Result from attempting to run a Git command.
+    """
+
+    succeeded: bool
+    output: str
+
+
 def run_git_command(
     *arguments: str,
-) -> str:
+) -> GitCommandResult:
     """
-    Run a Git command and return its cleaned output.
+    Run a Git command without interrupting evaluation on failure.
 
-    Evaluation runs should still work outside a Git repository, so Git
-    failures return a safe fallback value instead of stopping the run.
+    Empty output is preserved because some successful Git commands,
+    such as `git status --porcelain`, intentionally return nothing.
     """
     try:
         result = subprocess.run(
@@ -40,66 +51,86 @@ def run_git_command(
         subprocess.CalledProcessError,
         subprocess.TimeoutExpired,
     ):
-        return UNKNOWN_GIT_VALUE
+        return GitCommandResult(
+            succeeded=False,
+            output="",
+        )
 
-    output = result.stdout.strip()
-
-    return output or UNKNOWN_GIT_VALUE
+    return GitCommandResult(
+        succeeded=True,
+        output=result.stdout.strip(),
+    )
 
 
 def get_git_branch() -> str:
     """
     Return the currently checked-out Git branch.
     """
-    return run_git_command(
+    result = run_git_command(
         "branch",
         "--show-current",
     )
+
+    if not result.succeeded or not result.output:
+        return UNKNOWN_GIT_VALUE
+
+    return result.output
 
 
 def get_git_commit() -> str:
     """
     Return the abbreviated SHA for the current Git commit.
     """
-    return run_git_command(
+    result = run_git_command(
         "rev-parse",
         "--short",
         "HEAD",
     )
+
+    if not result.succeeded or not result.output:
+        return UNKNOWN_GIT_VALUE
+
+    return result.output
 
 
 def get_git_commit_full() -> str:
     """
     Return the full SHA for the current Git commit.
     """
-    return run_git_command(
+    result = run_git_command(
         "rev-parse",
         "HEAD",
     )
+
+    if not result.succeeded or not result.output:
+        return UNKNOWN_GIT_VALUE
+
+    return result.output
 
 
 def has_uncommitted_changes() -> bool | None:
     """
     Return whether the repository contains uncommitted changes.
 
-    None is returned when Git information is unavailable.
+    False means Git succeeded and returned an empty status.
+    None means Git status could not be determined.
     """
-    status = run_git_command(
+    result = run_git_command(
         "status",
         "--porcelain",
     )
 
-    if status == UNKNOWN_GIT_VALUE:
+    if not result.succeeded:
         return None
 
-    return bool(status)
+    return bool(result.output)
 
 
 def build_experiment_metadata(
     dataset_size: int,
 ) -> dict[str, Any]:
     """
-    Build the shared metadata attached to a Braintrust experiment.
+    Build metadata attached to a Braintrust experiment.
     """
     if dataset_size < 0:
         raise ValueError(
