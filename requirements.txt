@@ -1,7 +1,9 @@
 braintrust
 fastapi
 google-genai
+httpx
 pydantic>=2.0
+pytest
 python-dotenv
 requests
 spotipy

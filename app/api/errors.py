@@ -4,6 +4,7 @@ import logging
 
 import requests
 from fastapi import FastAPI, Request
+from fastapi.encoders import jsonable_encoder
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 
@@ -30,9 +31,11 @@ def error_response(
 
     return JSONResponse(
         status_code=status_code,
-        content={
-            "error": error_data,
-        },
+        content=jsonable_encoder(
+            {
+                "error": error_data,
+            }
+        ),
     )
 
 
@@ -86,8 +89,7 @@ def register_exception_handlers(
         error: requests.RequestException,
     ) -> JSONResponse:
         logger.exception(
-            "External service request failed.",
-            exc_info=error,
+            "External service request failed."
         )
 
         return error_response(
@@ -105,8 +107,7 @@ def register_exception_handlers(
         error: RuntimeError,
     ) -> JSONResponse:
         logger.exception(
-            "Playlist runtime error.",
-            exc_info=error,
+            "Playlist runtime error."
         )
 
         return error_response(
@@ -121,8 +122,7 @@ def register_exception_handlers(
         error: Exception,
     ) -> JSONResponse:
         logger.exception(
-            "Unexpected API error.",
-            exc_info=error,
+            "Unexpected API error."
         )
 
         return error_response(
