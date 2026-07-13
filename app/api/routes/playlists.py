@@ -12,6 +12,7 @@ from app.api.dependencies import (
 )
 from app.config import (
     LLM_PROVIDER,
+    SPOTIFY_PUBLISHING_ENABLED,
     get_active_model,
 )
 from app.prompt import PROMPT_VERSION
@@ -63,19 +64,29 @@ def generate_playlist(
     """
     Generate, enrich, evaluate, and optionally publish a playlist.
     """
-    service_input = request.to_service_input()
-
-    generated_playlist = generation_service.generate(
-        service_input
+    service_input = (
+        request.to_service_input()
     )
 
-    enriched_playlist = spotify_service.enrich_playlist(
-        generated_playlist
+    generated_playlist = (
+        generation_service.generate(
+            service_input
+        )
     )
 
-    raw_scores = evaluation_service.evaluate(
-        enriched_playlist,
-        expected_length=request.playlist_length,
+    enriched_playlist = (
+        spotify_service.enrich_playlist(
+            generated_playlist
+        )
+    )
+
+    raw_scores = (
+        evaluation_service.evaluate(
+            enriched_playlist,
+            expected_length=(
+                request.playlist_length
+            ),
+        )
     )
 
     passed_quality_gate = (
@@ -85,25 +96,42 @@ def generate_playlist(
     )
 
     scores = PlaylistScores(
-        spotify_match=raw_scores["spotify_match"],
-        duplicate_score=raw_scores["duplicates"],
-        playlist_length=raw_scores["playlist_length"],
+        spotify_match=(
+            raw_scores["spotify_match"]
+        ),
+        duplicate_score=(
+            raw_scores["duplicates"]
+        ),
+        playlist_length=(
+            raw_scores["playlist_length"]
+        ),
         match_confidence=(
-            raw_scores["spotify_match_confidence"]
+            raw_scores[
+                "spotify_match_confidence"
+            ]
         ),
     )
 
     publication: PublishedPlaylist | None = None
     published = False
 
-    if passed_quality_gate:
-        publication_result = publishing_service.publish(
-            enriched_playlist,
-            public=request.is_public,
+    should_publish = (
+        passed_quality_gate
+        and SPOTIFY_PUBLISHING_ENABLED
+    )
+
+    if should_publish:
+        publication_result = (
+            publishing_service.publish(
+                enriched_playlist,
+                public=request.is_public,
+            )
         )
 
-        publication = PublishedPlaylist.model_validate(
-            publication_result
+        publication = (
+            PublishedPlaylist.model_validate(
+                publication_result
+            )
         )
         published = True
 
@@ -114,7 +142,9 @@ def generate_playlist(
     return GeneratePlaylistResponse(
         playlist=playlist,
         scores=scores,
-        passed_quality_gate=passed_quality_gate,
+        passed_quality_gate=(
+            passed_quality_gate
+        ),
         published=published,
         publication=publication,
         provider=LLM_PROVIDER,

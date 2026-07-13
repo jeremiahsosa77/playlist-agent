@@ -1,0 +1,17 @@
+.git
+.github
+.venv
+venv
+env
+__pycache__
+*.py[cod]
+.pytest_cache
+.coverage
+htmlcov
+.env
+.env.*
+.spotify_caches
+.cache
+tests
+evals
+README.md

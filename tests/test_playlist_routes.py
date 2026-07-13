@@ -190,3 +190,37 @@ def test_generate_playlist_rejects_unknown_fields(
     assert response.json()["error"]["code"] == (
         "REQUEST_VALIDATION_ERROR"
     )
+
+def test_generation_can_skip_spotify_publication(
+    client: TestClient,
+    fake_publishing_service: FakePublishingService,
+    monkeypatch,
+) -> None:
+    """
+    Generation should still succeed when production publishing is disabled.
+    """
+    import app.api.routes.playlists as playlists_route
+
+    monkeypatch.setattr(
+        playlists_route,
+        "SPOTIFY_PUBLISHING_ENABLED",
+        False,
+    )
+
+    response = client.post(
+        "/api/playlists/generate",
+        json=build_request(),
+    )
+
+    assert response.status_code == 200
+
+    data = response.json()
+
+    assert data["passedQualityGate"] is True
+    assert data["published"] is False
+    assert data["publication"] is None
+
+    assert (
+        fake_publishing_service.publish_call_count
+        == 0
+    )

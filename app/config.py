@@ -8,6 +8,28 @@ from dotenv import load_dotenv
 load_dotenv()
 
 
+def get_boolean_environment_value(
+    name: str,
+    default: bool = False,
+) -> bool:
+    """
+    Read a boolean environment variable safely.
+    """
+    default_value = "true" if default else "false"
+
+    value = os.getenv(
+        name,
+        default_value,
+    ).strip().lower()
+
+    return value in {
+        "1",
+        "true",
+        "yes",
+        "on",
+    }
+
+
 APP_NAME = os.getenv(
     "APP_NAME",
     "Playlist Agent API",
@@ -64,6 +86,13 @@ SPOTIFY_CONFIDENCE_THRESHOLD = float(
     )
 )
 
+SPOTIFY_PUBLISHING_ENABLED = (
+    get_boolean_environment_value(
+        "SPOTIFY_PUBLISHING_ENABLED",
+        default=True,
+    )
+)
+
 SPOTIFY_REQUEST_TIMEOUT = (
     10,
     30,
@@ -77,13 +106,12 @@ OPENROUTER_REQUEST_TIMEOUT = (
 
 def get_cors_origins() -> list[str]:
     """
-    Return the frontend origins allowed to call the API.
-
-    Multiple origins may be provided as a comma-separated environment value.
+    Return frontend origins allowed to call the API.
     """
     raw_origins = os.getenv(
         "CORS_ORIGINS",
-        "http://localhost:3000",
+        "http://localhost:3000,"
+        "http://127.0.0.1:3000",
     )
 
     return [
@@ -95,7 +123,7 @@ def get_cors_origins() -> list[str]:
 
 def get_active_model() -> str:
     """
-    Return the model configured for the active LLM provider.
+    Return the model configured for the active provider.
     """
     if LLM_PROVIDER == "gemini":
         return GEMINI_MODEL

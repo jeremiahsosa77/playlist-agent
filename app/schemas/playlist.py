@@ -98,7 +98,7 @@ class SpotifyTrack(APIModel):
     album: str
     spotify_url: str
 
-    duration: str | None = None
+    duration_ms: int | None = None
     image_url: str | None = None
 
 

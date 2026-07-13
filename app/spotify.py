@@ -1,131 +1,99 @@
-"""Spotify search and playlist-publishing helpers."""
+"""Spotify catalog search and playlist publishing helpers."""
 
-import json
 import os
-from pathlib import Path
-from threading import Lock
+from typing import Any
 
 import requests
 import spotipy
-from dotenv import load_dotenv
-from spotipy.exceptions import SpotifyException
-from spotipy.oauth2 import SpotifyOAuth
-
-from app.config import SPOTIFY_REQUEST_TIMEOUT
-
-
-load_dotenv()
-
-
-SCOPE = (
-    "playlist-modify-private "
-    "playlist-modify-public"
+from spotipy.oauth2 import (
+    SpotifyClientCredentials,
 )
 
-CACHE_PATH = Path(".spotify_search_cache.json")
-CACHE_LOCK = Lock()
-
-
-sp = spotipy.Spotify(
-    auth_manager=SpotifyOAuth(
-        client_id=os.getenv("SPOTIFY_CLIENT_ID"),
-        client_secret=os.getenv("SPOTIFY_CLIENT_SECRET"),
-        redirect_uri=os.getenv("SPOTIFY_REDIRECT_URI"),
-        scope=SCOPE,
-    ),
-    requests_timeout=30,
-    status_forcelist=(500, 502, 503, 504),
-    retries=3,
-    status_retries=3,
-    backoff_factor=0.5,
+from app.config import (
+    SPOTIFY_REQUEST_TIMEOUT,
 )
 
 
-def normalize_cache_text(value: str) -> str:
-    """Normalize song metadata for use in a cache key."""
-    return " ".join(
-        value.strip().lower().split()
+SPOTIFY_ACCOUNTS_TOKEN_URL = (
+    "https://accounts.spotify.com/api/token"
+)
+
+SPOTIFY_API_BASE_URL = (
+    "https://api.spotify.com/v1"
+)
+
+
+def get_required_environment_value(
+    name: str,
+) -> str:
+    """
+    Return a required environment variable or raise a clear error.
+    """
+    value = os.getenv(
+        name,
+        "",
+    ).strip()
+
+    if not value:
+        raise ValueError(
+            f"{name} is missing from the environment."
+        )
+
+    return value
+
+
+def create_search_client() -> spotipy.Spotify:
+    """
+    Create a Spotify client for public catalog searches.
+
+    Client Credentials authentication does not require a user login,
+    browser redirect, or local token cache.
+    """
+    client_id = get_required_environment_value(
+        "SPOTIFY_CLIENT_ID"
+    )
+    client_secret = get_required_environment_value(
+        "SPOTIFY_CLIENT_SECRET"
+    )
+
+    authentication_manager = (
+        SpotifyClientCredentials(
+            client_id=client_id,
+            client_secret=client_secret,
+        )
+    )
+
+    return spotipy.Spotify(
+        auth_manager=authentication_manager,
+        requests_timeout=30,
+        retries=3,
+        status_retries=3,
+        backoff_factor=0.5,
     )
 
 
-def build_cache_key(
-    title: str,
-    artist: str,
-) -> str:
-    """Build a stable cache key from a title and artist."""
-    normalized_title = normalize_cache_text(title)
-    normalized_artist = normalize_cache_text(artist)
-
-    return f"{normalized_artist}::{normalized_title}"
+_search_client: spotipy.Spotify | None = None
 
 
-def load_search_cache() -> dict:
-    """Load the local Spotify search cache."""
-    if not CACHE_PATH.exists():
-        return {}
+def get_search_client() -> spotipy.Spotify:
+    """
+    Return the shared lazily initialized Spotify search client.
+    """
+    global _search_client
 
-    try:
-        with CACHE_PATH.open(
-            "r",
-            encoding="utf-8",
-        ) as file:
-            data = json.load(file)
+    if _search_client is None:
+        _search_client = create_search_client()
 
-        return data if isinstance(data, dict) else {}
-
-    except (
-        json.JSONDecodeError,
-        OSError,
-    ):
-        return {}
-
-
-def save_search_cache(cache: dict) -> None:
-    """Safely write the Spotify search cache to disk."""
-    temporary_path = CACHE_PATH.with_suffix(".tmp")
-
-    with temporary_path.open(
-        "w",
-        encoding="utf-8",
-    ) as file:
-        json.dump(
-            cache,
-            file,
-            indent=2,
-            ensure_ascii=False,
-        )
-
-    temporary_path.replace(CACHE_PATH)
-
-
-SPOTIFY_SEARCH_CACHE = load_search_cache()
+    return _search_client
 
 
 def search_song(
     title: str,
     artist: str,
-) -> dict | None:
+) -> dict[str, Any] | None:
     """
-    Search Spotify for a song using a local cache and progressively
-    broader API queries.
+    Search Spotify for a song using progressively broader queries.
     """
-    cache_key = build_cache_key(
-        title=title,
-        artist=artist,
-    )
-
-    with CACHE_LOCK:
-        cached_result = SPOTIFY_SEARCH_CACHE.get(
-            cache_key
-        )
-
-    if cached_result is not None:
-        print(
-            f"Spotify cache hit: "
-            f"{artist} - {title}"
-        )
-        return cached_result
-
     queries = [
         f'track:"{title}" artist:"{artist}"',
         f'"{title}" "{artist}"',
@@ -133,34 +101,15 @@ def search_song(
         title,
     ]
 
+    client = get_search_client()
+
     for query in queries:
         try:
-            results = sp.search(
+            results = client.search(
                 q=query,
                 type="track",
                 limit=1,
             )
-
-        except SpotifyException as error:
-            if error.http_status == 429:
-                headers = error.headers or {}
-                retry_after = headers.get(
-                    "Retry-After",
-                    "unknown",
-                )
-
-                raise RuntimeError(
-                    "Spotify rate limit reached. "
-                    f"Spotify requested a wait of "
-                    f"{retry_after} seconds."
-                ) from error
-
-            print(
-                "Spotify search failed for "
-                f"{artist} - {title}: {error}"
-            )
-            continue
-
         except requests.RequestException as error:
             print(
                 "Spotify search failed for "
@@ -178,7 +127,22 @@ def search_song(
 
         track = tracks[0]
 
-        spotify_result = {
+        album_images = (
+            track.get("album", {})
+            .get("images", [])
+        )
+
+        image_url = (
+            album_images[0].get("url")
+            if album_images
+            else None
+        )
+
+        duration_ms = track.get(
+            "duration_ms"
+        )
+
+        return {
             "id": track["id"],
             "uri": track["uri"],
             "title": track["name"],
@@ -191,20 +155,59 @@ def search_song(
             "spotify_url": (
                 track["external_urls"]["spotify"]
             ),
+            "duration_ms": duration_ms,
+            "image_url": image_url,
         }
 
-        with CACHE_LOCK:
-            SPOTIFY_SEARCH_CACHE[
-                cache_key
-            ] = spotify_result
-
-            save_search_cache(
-                SPOTIFY_SEARCH_CACHE
-            )
-
-        return spotify_result
-
     return None
+
+
+def get_spotify_user_access_token() -> str:
+    """
+    Exchange the configured refresh token for a Spotify user access token.
+    """
+    client_id = get_required_environment_value(
+        "SPOTIFY_CLIENT_ID"
+    )
+    client_secret = get_required_environment_value(
+        "SPOTIFY_CLIENT_SECRET"
+    )
+    refresh_token = get_required_environment_value(
+        "SPOTIFY_REFRESH_TOKEN"
+    )
+
+    response = requests.post(
+        SPOTIFY_ACCOUNTS_TOKEN_URL,
+        data={
+            "grant_type": "refresh_token",
+            "refresh_token": refresh_token,
+        },
+        auth=(
+            client_id,
+            client_secret,
+        ),
+        timeout=SPOTIFY_REQUEST_TIMEOUT,
+    )
+
+    if not response.ok:
+        raise RuntimeError(
+            "Spotify could not refresh the user "
+            "access token: "
+            f"{response.status_code} "
+            f"{response.text}"
+        )
+
+    response_data = response.json()
+    access_token = response_data.get(
+        "access_token"
+    )
+
+    if not access_token:
+        raise RuntimeError(
+            "Spotify returned no user access token."
+        )
+
+    return access_token
 
 
 def create_playlist(
@@ -212,7 +215,7 @@ def create_playlist(
     description: str,
     track_uris: list[str],
     public: bool = False,
-) -> dict:
+) -> dict[str, Any]:
     """
     Create a Spotify playlist and add the supplied track URIs.
     """
@@ -221,34 +224,40 @@ def create_playlist(
             "At least one Spotify track URI is required."
         )
 
-    token = sp.auth_manager.get_access_token(
-        as_dict=False
+    access_token = (
+        get_spotify_user_access_token()
     )
 
     headers = {
-        "Authorization": f"Bearer {token}",
+        "Authorization": (
+            f"Bearer {access_token}"
+        ),
         "Content-Type": "application/json",
     }
 
-    playlist_payload = {
-        "name": name,
-        "description": description,
-        "public": public,
-    }
-
     playlist_response = requests.post(
-        "https://api.spotify.com/v1/me/playlists",
+        f"{SPOTIFY_API_BASE_URL}/me/playlists",
         headers=headers,
-        json=playlist_payload,
+        json={
+            "name": name,
+            "description": description,
+            "public": public,
+        },
         timeout=SPOTIFY_REQUEST_TIMEOUT,
     )
 
-    playlist_response.raise_for_status()
+    if not playlist_response.ok:
+        raise RuntimeError(
+            "Spotify playlist creation failed: "
+            f"{playlist_response.status_code} "
+            f"{playlist_response.text}"
+        )
+
     playlist = playlist_response.json()
 
     add_tracks_response = requests.post(
         (
-            "https://api.spotify.com/v1/playlists/"
+            f"{SPOTIFY_API_BASE_URL}/playlists/"
             f"{playlist['id']}/items"
         ),
         headers=headers,
@@ -258,12 +267,19 @@ def create_playlist(
         timeout=SPOTIFY_REQUEST_TIMEOUT,
     )
 
-    add_tracks_response.raise_for_status()
+    if not add_tracks_response.ok:
+        raise RuntimeError(
+            "Spotify track insertion failed: "
+            f"{add_tracks_response.status_code} "
+            f"{add_tracks_response.text}"
+        )
 
     return {
         "id": playlist["id"],
         "name": playlist["name"],
-        "url": playlist["external_urls"]["spotify"],
+        "url": playlist[
+            "external_urls"
+        ]["spotify"],
         "track_count": len(track_uris),
         "public": public,
     }
