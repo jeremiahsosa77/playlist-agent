@@ -8,6 +8,7 @@ from app.api.routes import (
     configuration_router,
     health_router,
     playlists_router,
+    interviews_router,
 )
 from app.config import (
     API_PREFIX,
@@ -44,6 +45,10 @@ def create_application() -> FastAPI:
     )
     application.include_router(
         configuration_router,
+        prefix=API_PREFIX,
+    )
+    application.include_router(
+        interviews_router,
         prefix=API_PREFIX,
     )
     application.include_router(

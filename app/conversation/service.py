@@ -101,6 +101,17 @@ class ConversationService:
         return self._session_store.get(
             session_id
         )
+    
+    def delete_session(
+        self,
+        session_id: str,
+    ) -> None:
+        """
+        Permanently remove a conversation session.
+        """
+        self._session_store.delete(
+            session_id
+        )
 
     def add_user_message(
         self,

@@ -7,10 +7,16 @@ import pytest
 from fastapi.testclient import TestClient
 
 from app.api.dependencies import (
+    get_conversation_service,
     get_evaluation_service,
     get_playlist_generation_service,
     get_publishing_service,
     get_spotify_service,
+)
+from app.conversation import (
+    ConversationService,
+    GeneratedTextInterviewProvider,
+    InMemoryConversationSessionStore,
 )
 from app.main import app
 
@@ -24,7 +30,9 @@ class FakePlaylistGenerationService:
         self,
         user_input: dict[str, Any],
     ) -> dict[str, Any]:
-        playlist_length = user_input["playlist_length"]
+        playlist_length = user_input[
+            "playlist_length"
+        ]
 
         songs = [
             {
@@ -41,7 +49,8 @@ class FakePlaylistGenerationService:
             "playlist": {
                 "name": "Test Playlist",
                 "description": (
-                    "A predictable playlist used by automated tests."
+                    "A predictable playlist used by "
+                    "automated tests."
                 ),
                 "songs": songs,
             }
@@ -65,7 +74,9 @@ class FakeSpotifyService:
         ):
             song["spotify"] = {
                 "id": f"track-{index}",
-                "uri": f"spotify:track:track-{index}",
+                "uri": (
+                    f"spotify:track:track-{index}"
+                ),
                 "title": song["title"],
                 "artist": song["artist"],
                 "artists": [
@@ -131,7 +142,7 @@ class FailingEvaluationService:
 
 class FakePublishingService:
     """
-    Return predictable publication metadata without calling Spotify.
+    Return predictable publication metadata.
     """
 
     def __init__(self) -> None:
@@ -158,6 +169,44 @@ class FakePublishingService:
         }
 
 
+def build_fake_conversation_service() -> ConversationService:
+    """
+    Return an isolated interview service for API tests.
+    """
+    def fake_interview_generator(
+        prompt: str,
+    ) -> str:
+        if "ready now" in prompt.lower():
+            return """
+            {
+              "action": "ready_to_generate",
+              "question": null,
+              "reasoning_summary": "The user supplied enough context."
+            }
+            """
+
+        return """
+        {
+          "action": "ask_question",
+          "question": "Do you want familiar songs or hidden gems?",
+          "reasoning_summary": "Discovery preference is missing."
+        }
+        """
+
+    provider = GeneratedTextInterviewProvider(
+        text_generator=(
+            fake_interview_generator
+        )
+    )
+
+    return ConversationService(
+        session_store=(
+            InMemoryConversationSessionStore()
+        ),
+        decision_provider=provider,
+    )
+
+
 @pytest.fixture
 def fake_publishing_service() -> FakePublishingService:
     """
@@ -167,11 +216,20 @@ def fake_publishing_service() -> FakePublishingService:
 
 
 @pytest.fixture
+def conversation_service() -> ConversationService:
+    """
+    Return an isolated fake-backed interview service.
+    """
+    return build_fake_conversation_service()
+
+
+@pytest.fixture
 def client(
     fake_publishing_service: FakePublishingService,
+    conversation_service: ConversationService,
 ) -> Generator[TestClient, None, None]:
     """
-    Create a FastAPI client with all external services replaced.
+    Create a client with external services replaced.
     """
     app.dependency_overrides[
         get_playlist_generation_service
@@ -188,6 +246,10 @@ def client(
     app.dependency_overrides[
         get_publishing_service
     ] = lambda: fake_publishing_service
+
+    app.dependency_overrides[
+        get_conversation_service
+    ] = lambda: conversation_service
 
     with TestClient(app) as test_client:
         yield test_client

@@ -12,6 +12,16 @@ from app.schemas.evaluation import (
     QualityGateResult,
 )
 from app.schemas.health import HealthResponse
+from app.schemas.interview import (
+    CancelInterviewResponse,
+    CreateInterviewRequest,
+    CreateInterviewResponse,
+    InterviewActionResponse,
+    InterviewMessageResponse,
+    InterviewSessionResponse,
+    SubmitInterviewMessageRequest,
+    SubmitInterviewMessageResponse,
+)
 from app.schemas.playlist import (
     GeneratePlaylistRequest,
     GeneratePlaylistResponse,
@@ -22,12 +32,19 @@ from app.schemas.playlist import (
     SpotifyTrack,
 )
 
+
 __all__ = [
     "APIModel",
+    "CancelInterviewResponse",
+    "CreateInterviewRequest",
+    "CreateInterviewResponse",
     "GeneratePlaylistRequest",
     "GeneratePlaylistResponse",
     "GeneratedSong",
     "HealthResponse",
+    "InterviewActionResponse",
+    "InterviewMessageResponse",
+    "InterviewSessionResponse",
     "ModelInformation",
     "ModelsResponse",
     "PlaylistCandidate",
@@ -38,4 +55,6 @@ __all__ = [
     "PublishedPlaylist",
     "QualityGateResult",
     "SpotifyTrack",
+    "SubmitInterviewMessageRequest",
+    "SubmitInterviewMessageResponse",
 ]
