@@ -13,5 +13,4 @@ htmlcov
 .spotify_caches
 .cache
 tests
-evals
 README.md
