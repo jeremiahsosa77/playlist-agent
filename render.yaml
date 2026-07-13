@@ -6,7 +6,6 @@ services:
     region: ohio
 
     healthCheckPath: /api/health
-
     autoDeployTrigger: checksPass
 
     envVars:
@@ -71,10 +70,4 @@ services:
         sync: false
 
       - key: SPOTIFY_CLIENT_SECRET
-        sync: false
-
-      - key: SPOTIFY_REFRESH_TOKEN
-        sync: false
-
-      - key: BRAINTRUST_API_KEY
         sync: false
