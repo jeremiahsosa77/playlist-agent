@@ -1,90 +1,152 @@
-"""Tests for interview response parsing."""
+"""Tests for parsing adaptive interview model responses."""
+
+import json
 
 import pytest
 
 from app.conversation import (
+    PLAYLIST_BRIEF_VERSION,
     InterviewActionType,
     InterviewResponseParseError,
     parse_interview_action,
 )
 
 
+def build_valid_brief() -> dict[str, object]:
+    """
+    Return one valid structured playlist brief.
+    """
+    return {
+        "version": PLAYLIST_BRIEF_VERSION,
+        "situation": (
+            "A high-energy late-night drive."
+        ),
+        "mood": [
+            "energetic",
+            "confident",
+        ],
+        "energy": "high",
+        "energy_curve": (
+            "Maintain strong energy throughout."
+        ),
+        "preferred_artists": [],
+        "preferred_genres": [
+            "alternative R&B",
+        ],
+        "avoid_artists": [],
+        "avoid_genres": [],
+        "avoid_other": [],
+        "familiarity": "mostly hidden gems",
+        "explicit_content": None,
+        "playlist_length": 20,
+        "is_public": False,
+        "additional_notes": None,
+    }
+
+
 def test_parser_accepts_question_action() -> None:
     """
-    Valid question JSON should become an InterviewAction.
+    Question JSON should produce an ask-question action.
     """
     action = parse_interview_action(
         """
         {
           "action": "ask_question",
-          "question": "Popular songs or hidden gems?",
-          "reasoning_summary": "Discovery preference is missing."
+          "question": "Should the playlist build in energy?",
+          "reasoning_summary": "The energy progression is unclear.",
+          "brief": null
         }
         """
     )
 
-    assert action.action == (
-        InterviewActionType.ASK_QUESTION
+    assert (
+        action.action
+        == InterviewActionType.ASK_QUESTION
     )
     assert action.question == (
-        "Popular songs or hidden gems?"
+        "Should the playlist build in energy?"
     )
+    assert action.brief is None
 
 
 def test_parser_accepts_ready_action() -> None:
     """
-    Ready JSON should validate without a question.
+    Ready JSON should validate with a complete brief.
     """
     action = parse_interview_action(
-        """
-        {
-          "action": "ready_to_generate",
-          "question": null,
-          "reasoning_summary": "Enough context exists."
-        }
-        """
+        json.dumps(
+            {
+                "action": "ready_to_generate",
+                "question": None,
+                "reasoning_summary": (
+                    "Enough context exists."
+                ),
+                "brief": build_valid_brief(),
+            }
+        )
     )
 
-    assert action.action == (
-        InterviewActionType.READY_TO_GENERATE
+    assert (
+        action.action
+        == InterviewActionType.READY_TO_GENERATE
     )
     assert action.question is None
+    assert action.brief is not None
+    assert action.brief.playlist_length == 20
 
 
-def test_parser_removes_markdown_fences() -> None:
+def test_parser_removes_markdown_json_fences() -> None:
     """
-    Common JSON fences should be tolerated.
+    JSON Markdown fences should be tolerated.
     """
     action = parse_interview_action(
-        """```json
+        """
+        ```json
         {
           "action": "clarify",
-          "question": "What activity is this for?"
+          "question": "Do you mean upbeat or intense?",
+          "reasoning_summary": "The word energetic is ambiguous.",
+          "brief": null
         }
-        ```"""
+        ```
+        """
     )
 
-    assert action.action == (
-        InterviewActionType.CLARIFY
+    assert (
+        action.action
+        == InterviewActionType.CLARIFY
     )
 
 
 def test_parser_rejects_invalid_json() -> None:
     """
-    Non-JSON responses should fail clearly.
+    Non-JSON model output should fail clearly.
     """
     with pytest.raises(
         InterviewResponseParseError,
         match="not valid JSON",
     ):
         parse_interview_action(
-            "Ask them what music they like."
+            "Ask the user about energy."
         )
 
 
-def test_parser_rejects_unknown_action() -> None:
+def test_parser_rejects_non_object_json() -> None:
     """
-    Unsupported action names should fail validation.
+    The top-level model output must be an object.
+    """
+    with pytest.raises(
+        InterviewResponseParseError,
+        match="must be a JSON object",
+    ):
+        parse_interview_action(
+            '["ask_question"]'
+        )
+
+
+def test_parser_rejects_invalid_action_shape() -> None:
+    """
+    Responses missing required action fields should fail.
     """
     with pytest.raises(
         InterviewResponseParseError,
@@ -93,25 +155,20 @@ def test_parser_rejects_unknown_action() -> None:
         parse_interview_action(
             """
             {
-              "action": "generate_songs",
-              "question": null
+              "action": "ask_question",
+              "question": null,
+              "brief": null
             }
             """
         )
 
 
-def test_parser_rejects_missing_question() -> None:
+def test_parser_rejects_empty_response() -> None:
     """
-    Question actions must include question text.
+    Empty provider output should fail.
     """
     with pytest.raises(
         InterviewResponseParseError,
-        match="invalid action",
+        match="empty response",
     ):
-        parse_interview_action(
-            """
-            {
-              "action": "ask_question"
-            }
-            """
-        )
+        parse_interview_action("")

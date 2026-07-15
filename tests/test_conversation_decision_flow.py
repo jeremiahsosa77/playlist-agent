@@ -71,14 +71,36 @@ def test_user_response_triggers_follow_up_question() -> None:
 
 def test_user_response_can_finish_interview() -> None:
     """
-    The model may mark a sufficiently detailed interview as ready.
+    The model may mark a detailed interview as ready with a brief.
     """
     service = build_service(
         """
         {
           "action": "ready_to_generate",
           "question": null,
-          "reasoning_summary": "The user provided enough context."
+          "reasoning_summary": "The user provided enough context.",
+          "brief": {
+            "version": "playlist-brief-v1",
+            "situation": "A high-energy late-night drive.",
+            "mood": [
+              "energetic",
+              "confident"
+            ],
+            "energy": "high",
+            "energy_curve": "Maintain strong energy.",
+            "preferred_artists": [],
+            "preferred_genres": [
+              "alternative R&B"
+            ],
+            "avoid_artists": [],
+            "avoid_genres": [],
+            "avoid_other": [],
+            "familiarity": "mostly hidden gems",
+            "explicit_content": null,
+            "playlist_length": 20,
+            "is_public": false,
+            "additional_notes": null
+          }
         }
         """
     )
@@ -95,12 +117,18 @@ def test_user_response_can_finish_interview() -> None:
         )
     )
 
-    assert action.action == (
-        InterviewActionType.READY_TO_GENERATE
+    assert (
+        updated_session.status
+        == ConversationStatus.READY_TO_GENERATE
     )
-    assert updated_session.status == (
-        ConversationStatus.READY_TO_GENERATE
+
+    assert (
+        action.action
+        == InterviewActionType.READY_TO_GENERATE
     )
+
+    assert action.brief is not None
+    assert action.brief.energy == "high"
 
 
 def test_max_question_limit_forces_readiness() -> None:

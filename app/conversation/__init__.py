@@ -1,9 +1,11 @@
 """Adaptive playlist interview engine."""
 
 from app.conversation.models import (
+    PLAYLIST_BRIEF_VERSION,
     ConversationMessage,
     ConversationSession,
     InterviewAction,
+    PlaylistBrief,
 )
 from app.conversation.parser import (
     InterviewResponseParseError,
@@ -32,6 +34,7 @@ from app.conversation.state import (
 
 
 __all__ = [
+    "PLAYLIST_BRIEF_VERSION",
     "ConfiguredInterviewProvider",
     "ConversationMessage",
     "ConversationProviderNotConfiguredError",
@@ -48,5 +51,6 @@ __all__ = [
     "InterviewDecisionProvider",
     "InterviewProviderError",
     "InterviewResponseParseError",
+    "PlaylistBrief",
     "parse_interview_action",
 ]

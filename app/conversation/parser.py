@@ -7,6 +7,9 @@ from pydantic import ValidationError
 from app.conversation.models import (
     InterviewAction,
 )
+from app.conversation.state import (
+    InterviewActionType,
+)
 
 
 class InterviewResponseParseError(ValueError):
@@ -43,6 +46,8 @@ def parse_interview_action(
 ) -> InterviewAction:
     """
     Parse and validate an LLM response as a structured interview action.
+
+    LLM-generated ready actions must contain a validated playlist brief.
     """
     if not isinstance(text, str) or not text.strip():
         raise InterviewResponseParseError(
@@ -68,10 +73,22 @@ def parse_interview_action(
         )
 
     try:
-        return InterviewAction.model_validate(
+        action = InterviewAction.model_validate(
             raw_action
         )
     except ValidationError as error:
         raise InterviewResponseParseError(
             "The interview model returned an invalid action."
         ) from error
+
+    if (
+        action.action
+        == InterviewActionType.READY_TO_GENERATE
+        and action.brief is None
+    ):
+        raise InterviewResponseParseError(
+            "A ready-to-generate response must include "
+            "a playlist brief."
+        )
+
+    return action

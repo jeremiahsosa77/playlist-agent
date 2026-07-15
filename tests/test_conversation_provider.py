@@ -76,14 +76,36 @@ def test_provider_builds_prompt_and_parses_response() -> None:
 
 def test_provider_returns_ready_action() -> None:
     """
-    A valid ready response should be returned unchanged.
+    A valid ready response should include its playlist brief.
     """
     provider = GeneratedTextInterviewProvider(
         text_generator=lambda prompt: """
         {
           "action": "ready_to_generate",
           "question": null,
-          "reasoning_summary": "Enough context exists."
+          "reasoning_summary": "Enough context exists.",
+          "brief": {
+            "version": "playlist-brief-v1",
+            "situation": "A late-night drive.",
+            "mood": [
+              "energetic",
+              "confident"
+            ],
+            "energy": "high",
+            "energy_curve": "Maintain high energy.",
+            "preferred_artists": [],
+            "preferred_genres": [
+              "alternative R&B"
+            ],
+            "avoid_artists": [],
+            "avoid_genres": [],
+            "avoid_other": [],
+            "familiarity": "balanced",
+            "explicit_content": null,
+            "playlist_length": 20,
+            "is_public": false,
+            "additional_notes": null
+          }
         }
         """
     )
@@ -92,8 +114,13 @@ def test_provider_returns_ready_action() -> None:
         build_session()
     )
 
-    assert action.action == (
-        InterviewActionType.READY_TO_GENERATE
+    assert (
+        action.action
+        == InterviewActionType.READY_TO_GENERATE
+    )
+    assert action.brief is not None
+    assert action.brief.situation == (
+        "A late-night drive."
     )
 
 

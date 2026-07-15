@@ -8,6 +8,7 @@ from app.conversation import (
     ConversationMessage,
     ConversationSession,
     InterviewAction,
+    PlaylistBrief,
 )
 from app.conversation.state import (
     ConversationRole,
@@ -43,14 +44,66 @@ class InterviewMessageResponse(APIModel):
         )
 
 
+class PlaylistBriefResponse(APIModel):
+    """
+    Structured playlist requirements gathered by the interview.
+    """
+
+    version: str
+    situation: str
+    mood: list[str]
+    energy: str | None
+    energy_curve: str | None
+    preferred_artists: list[str]
+    preferred_genres: list[str]
+    avoid_artists: list[str]
+    avoid_genres: list[str]
+    avoid_other: list[str]
+    familiarity: str | None
+    explicit_content: bool | None
+    playlist_length: int
+    is_public: bool
+    additional_notes: str | None
+
+    @classmethod
+    def from_domain(
+        cls,
+        brief: PlaylistBrief,
+    ) -> "PlaylistBriefResponse":
+        """
+        Convert a domain playlist brief into an API response.
+        """
+        return cls(
+            version=brief.version,
+            situation=brief.situation,
+            mood=brief.mood,
+            energy=brief.energy,
+            energy_curve=brief.energy_curve,
+            preferred_artists=brief.preferred_artists,
+            preferred_genres=brief.preferred_genres,
+            avoid_artists=brief.avoid_artists,
+            avoid_genres=brief.avoid_genres,
+            avoid_other=brief.avoid_other,
+            familiarity=brief.familiarity,
+            explicit_content=brief.explicit_content,
+            playlist_length=brief.playlist_length,
+            is_public=brief.is_public,
+            additional_notes=brief.additional_notes,
+        )
+
+
 class InterviewActionResponse(APIModel):
     """
     Structured action selected by the interview decision engine.
     """
 
     action: InterviewActionType
+
     question: str | None = None
+
     reasoning_summary: str | None = None
+
+    brief: PlaylistBriefResponse | None = None
 
     @classmethod
     def from_domain(
@@ -58,12 +111,19 @@ class InterviewActionResponse(APIModel):
         action: InterviewAction,
     ) -> "InterviewActionResponse":
         """
-        Convert a domain action into an API response.
+        Convert a domain action into a public API response.
         """
         return cls(
             action=action.action,
             question=action.question,
             reasoning_summary=action.reasoning_summary,
+            brief=(
+                PlaylistBriefResponse.from_domain(
+                    action.brief
+                )
+                if action.brief is not None
+                else None
+            ),
         )
 
 
