@@ -114,8 +114,7 @@ def test_parser_accepts_ready_action_with_brief() -> None:
             "action": "ready_to_generate",
             "question": None,
             "reasoning_summary": (
-                "The occasion, mood, and music "
-                "direction are clear."
+                "The occasion, mood, and direction are clear."
             ),
             "brief": valid_brief_data(),
         }
@@ -137,7 +136,7 @@ def test_parser_accepts_ready_action_with_brief() -> None:
 
 def test_parser_rejects_ready_action_without_brief() -> None:
     """
-    LLM ready responses must include a playlist brief.
+    Model-produced ready responses must contain a brief.
     """
     response = json.dumps(
         {

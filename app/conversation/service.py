@@ -101,7 +101,7 @@ class ConversationService:
         return self._session_store.get(
             session_id
         )
-    
+
     def delete_session(
         self,
         session_id: str,
@@ -157,30 +157,28 @@ class ConversationService:
             content,
         )
 
+        if self._decision_provider is None:
+            raise (
+                ConversationProviderNotConfiguredError(
+                    "No interview decision provider "
+                    "has been configured."
+                )
+            )
+
+        action = self._decision_provider.decide(
+            session
+        )
+
         if (
             session.question_count
             >= self._max_questions
+            and action.action
+            != InterviewActionType.READY_TO_GENERATE
         ):
-            action = InterviewAction(
-                action=(
-                    InterviewActionType.READY_TO_GENERATE
-                ),
-                reasoning_summary=(
-                    "The interview reached its maximum "
-                    "question count."
-                ),
-            )
-        else:
-            if self._decision_provider is None:
-                raise (
-                    ConversationProviderNotConfiguredError(
-                        "No interview decision provider "
-                        "has been configured."
-                    )
-                )
-
-            action = self._decision_provider.decide(
-                session
+            raise ConversationStateError(
+                "The interview provider must return "
+                "ready_to_generate after the maximum "
+                "question count is reached."
             )
 
         updated_session = self.apply_action(
@@ -210,6 +208,13 @@ class ConversationService:
             action.action
             == InterviewActionType.READY_TO_GENERATE
         ):
+            if action.brief is None:
+                raise ConversationStateError(
+                    "A ready-to-generate action must "
+                    "include a playlist brief."
+                )
+
+            session.brief = action.brief
             session.status = (
                 ConversationStatus.READY_TO_GENERATE
             )

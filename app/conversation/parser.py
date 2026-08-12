@@ -47,7 +47,7 @@ def parse_interview_action(
     """
     Parse and validate an LLM response as a structured interview action.
 
-    LLM-generated ready actions must contain a validated playlist brief.
+    Model-generated ready actions must include a playlist brief.
     """
     if not isinstance(text, str) or not text.strip():
         raise InterviewResponseParseError(

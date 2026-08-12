@@ -41,10 +41,7 @@ class ConversationModel(BaseModel):
 
 class PlaylistBrief(ConversationModel):
     """
-    Structured playlist requirements collected during an interview.
-
-    This object becomes the stable contract between the interview,
-    playlist generation, evaluation, and future repair systems.
+    Structured playlist requirements gathered during an interview.
     """
 
     version: str = Field(
@@ -165,7 +162,7 @@ class InterviewAction(ConversationModel):
         self,
     ) -> "InterviewAction":
         """
-        Validate the fields allowed for each interview action.
+        Validate the fields permitted for each interview action.
         """
         asks_question = self.action in {
             InterviewActionType.ASK_QUESTION,
@@ -220,6 +217,8 @@ class ConversationSession(ConversationModel):
         default=0,
         ge=0,
     )
+
+    brief: PlaylistBrief | None = None
 
     created_at: datetime = Field(
         default_factory=utc_now

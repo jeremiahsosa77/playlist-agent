@@ -1,6 +1,5 @@
 """Shared pytest fixtures for Playlist Agent."""
 
-import os
 from collections.abc import Generator
 from typing import Any
 

@@ -6,7 +6,6 @@ from fastapi.testclient import TestClient
 
 from app.api.dependencies import (
     get_evaluation_service,
-    get_publishing_service,
 )
 from app.main import app
 from tests.conftest import (

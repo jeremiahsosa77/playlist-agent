@@ -5,8 +5,8 @@ from app.conversation.config import (
     INTERVIEW_PROMPT_VERSION,
 )
 from app.conversation.models import (
-    ConversationSession,
     PLAYLIST_BRIEF_VERSION,
+    ConversationSession,
 )
 
 
@@ -57,13 +57,12 @@ Interview rules:
 12. Do not include Markdown.
 13. Return only one valid JSON object.
 14. Do not include hidden reasoning or step-by-step analysis.
-15. Preserve the user's intent. Do not invent named artists, genres,
-    restrictions, or preferences that the user did not provide.
-16. When information was not provided and cannot be safely inferred,
-    use null, an empty list, or the documented default.
-17. Deduplicate all lists.
-18. Use concise values rather than full conversational sentences where
-    practical.
+15. Preserve the user's intent.
+16. Do not invent artists, genres, restrictions, or preferences.
+17. For missing information, use null, an empty list, or the specified
+    default.
+18. Deduplicate all lists.
+19. Use concise values rather than long conversational sentences.
 
 For a normal follow-up question, return:
 
@@ -83,7 +82,7 @@ For clarification, return:
   "brief": null
 }}
 
-When enough context exists, return a complete playlist brief:
+When enough context exists, return:
 
 {{
   "action": "ready_to_generate",
@@ -91,15 +90,15 @@ When enough context exists, return a complete playlist brief:
   "reasoning_summary": "A brief description of why the context is sufficient",
   "brief": {{
     "version": "{PLAYLIST_BRIEF_VERSION}",
-    "situation": "A concise description of the occasion, activity, or moment",
+    "situation": "A concise description of the occasion or moment",
     "mood": ["mood one", "mood two"],
     "energy": "The desired overall energy, or null",
-    "energy_curve": "How energy should progress, or null",
-    "preferred_artists": ["Only artists explicitly requested"],
-    "preferred_genres": ["Only genres explicitly requested or safely inferred"],
+    "energy_curve": "How the energy should progress, or null",
+    "preferred_artists": ["Only explicitly requested artists"],
+    "preferred_genres": ["Explicitly requested or safely inferred genres"],
     "avoid_artists": ["Artists explicitly excluded"],
     "avoid_genres": ["Genres explicitly excluded"],
-    "avoid_other": ["Other songs, sounds, moods, or qualities to avoid"],
+    "avoid_other": ["Other moods, songs, sounds, or qualities to avoid"],
     "familiarity": "Familiarity versus discovery preference, or null",
     "explicit_content": null,
     "playlist_length": 20,
@@ -112,16 +111,15 @@ Playlist brief rules:
 
 1. "version" must always be "{PLAYLIST_BRIEF_VERSION}".
 2. "situation" is required and must summarize the user's core request.
-3. "mood" may be empty only when no meaningful mood was provided.
+3. "mood" may be empty if no meaningful mood was provided.
 4. Use playlist_length 20 when the user did not request a length.
 5. playlist_length must be between 5 and 100.
 6. Use is_public false when visibility was not discussed.
 7. Use explicit_content null when it was not discussed.
-8. Never place avoided artists or genres into preferred lists.
-9. Do not manufacture artist preferences merely to make the brief
-   appear complete.
-10. The brief must represent the entire interview, not only the user's
-    latest response.
+8. Never put avoided artists or genres into preferred lists.
+9. Do not manufacture artist preferences.
+10. The brief must represent the entire interview, not only the latest
+    response.
 """.strip()
 
 

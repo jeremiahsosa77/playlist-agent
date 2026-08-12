@@ -1,3 +1,5 @@
+# On 3 right now, haven't completed it yet
+
 """Public API schemas for adaptive playlist interviews."""
 
 from datetime import datetime
@@ -98,11 +100,8 @@ class InterviewActionResponse(APIModel):
     """
 
     action: InterviewActionType
-
     question: str | None = None
-
     reasoning_summary: str | None = None
-
     brief: PlaylistBriefResponse | None = None
 
     @classmethod
@@ -111,7 +110,7 @@ class InterviewActionResponse(APIModel):
         action: InterviewAction,
     ) -> "InterviewActionResponse":
         """
-        Convert a domain action into a public API response.
+        Convert a domain action into an API response.
         """
         return cls(
             action=action.action,
